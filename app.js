@@ -2,12 +2,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/auto/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
-// A no-op lock replaces supabase's default navigator-lock. Returns and the Warehouse
-// Hub share one origin + one Supabase project (same auth-token storage key), so the
-// default cross-tab lock could deadlock a sign-in ("stuck on Signing in…") whenever a
-// Hub tab held it. This app has no concurrent-tab auth needs, so we skip the lock.
+// Returns and the Warehouse Hub share one origin + one Supabase project, so by default
+// they'd share the SAME auth-token storage key and the SAME cross-tab lock — a Hub tab
+// could then deadlock a Returns sign-in ("stuck on Signing in…"). Two fixes:
+//   • storageKey: give Returns its own isolated session store (no collision with the Hub)
+//   • lock: a no-op replaces the navigator-lock so nothing can ever block a sign-in
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { lock: async (_name, _timeout, fn) => await fn() },
+  auth: {
+    storageKey: "returns-auth",
+    lock: async (_name, _timeout, fn) => await fn(),
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
 });
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -214,13 +221,16 @@ function hideGate() { $("#authGate").hidden = true; }
 
 // After auth: claim/create the profile server-side, then boot the app (or bounce).
 async function route() {
-  const { data: { session } } = await sb.auth.getSession();
+  let session;
+  try { ({ data: { session } } = await sb.auth.getSession()); }
+  catch (e) { showGate("Couldn’t read your session — tap reset just below. (" + e.message + ")", true); return; }
   if (!session) { state.me = null; state.isAdmin = false; applyAdmin(); showGate(""); return; }
+  setAuthStatus("Loading your profile…");
   const { data: me, error } = await sb.rpc("returns_claim_profile");
   if (error) {
     if (/not invited/i.test(error.message)) {
       showGate(`Signed in as ${session.user.email}, but that email isn’t invited yet. Ask Karley to add you, then sign in again.`, true);
-    } else { showGate(error.message, true); }
+    } else { showGate("Load problem: " + error.message, true); }
     return;
   }
   const person = Array.isArray(me) ? me[0] : me;
@@ -504,7 +514,7 @@ function wire() {
   $("#authReset").onclick = async () => {
     setAuthStatus("Resetting…");
     try { await sb.auth.signOut({ scope: "local" }); } catch {}
-    try { Object.keys(localStorage).filter((k) => k.startsWith("sb-")).forEach((k) => localStorage.removeItem(k)); } catch {}
+    try { Object.keys(localStorage).filter((k) => k.startsWith("sb-") || k === "returns-auth").forEach((k) => localStorage.removeItem(k)); } catch {}
     location.replace(location.origin + location.pathname);   // clean URL drops any leftover #recovery hash
   };
   // ── invites ──
