@@ -248,7 +248,7 @@ async function route() {
     }
     const person = Array.isArray(me) ? me[0] : me;
     state.me = person; state.isAdmin = !!person.is_admin;
-    applyAdmin(); hideGate();
+    applyAdmin(); hideGate(); setAuthStatus("");
     $("#userChip").textContent = `${person.name}${person.is_admin ? " · admin" : ""}`;
     $("#userChip").hidden = false; $("#signOutBtn").hidden = false;
     await loadAll();
