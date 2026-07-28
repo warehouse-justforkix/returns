@@ -232,8 +232,10 @@ sb.auth.onAuthStateChange(async (event) => {
   if (event === "PASSWORD_RECOVERY") {
     const np = prompt("Choose a new password (8+ characters):");
     if (np) { const { error } = await sb.auth.updateUser({ password: np }); toast(error ? error.message : "Password updated"); }
+    route();                      // a recovery session is valid — go straight into the app
+    return;
   }
-  if (["SIGNED_IN", "SIGNED_OUT"].includes(event)) route();
+  if (["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) route();
 });
 
 async function doSignIn(email, password) {
