@@ -38,22 +38,27 @@ declare
   ncolors text[] := array['#4a3aa7','#eb6834','#1baf7a','#eda100','#e34948'];
 begin
   if uid is null then raise exception 'not authenticated'; end if;
+
+  -- already linked → return now (everyday case; a pure read, no lock, can't hang)
+  select * into p from returns_people where auth_user_id = uid;
+  if p.id is not null then return p; end if;
+
+  -- otherwise must be invited to link/create
   select * into inv from returns_invited_emails where email = e;
   if inv.email is null then raise exception 'not invited'; end if;
 
-  select * into p from returns_people where auth_user_id = uid;      -- already linked?
-  if p.id is null then                                              -- link by email…
-    select * into p from returns_people where lower(email) = e limit 1;
-    if p.id is null then                                            -- …else claim unlinked history by name…
-      select * into p from returns_people where name = inv.name and auth_user_id is null limit 1;
-    end if;
-    if p.id is null then                                            -- …else create a fresh person
-      insert into returns_people (name, email, auth_user_id, is_admin, color)
-        values (inv.name, e, uid, inv.is_admin,
-                ncolors[1 + (select count(*) from returns_people) % array_length(ncolors,1)])
-        returning * into p;
-      return p;
-    end if;
+  set local lock_timeout = '4s';   -- fail fast rather than hang if a row is locked
+
+  select * into p from returns_people where lower(email) = e limit 1;        -- link by email…
+  if p.id is null then                                                       -- …else claim history by name…
+    select * into p from returns_people where name = inv.name and auth_user_id is null limit 1;
+  end if;
+  if p.id is null then                                                       -- …else create a fresh person
+    insert into returns_people (name, email, auth_user_id, is_admin, color)
+      values (inv.name, e, uid, inv.is_admin,
+              ncolors[1 + (select count(*) from returns_people) % array_length(ncolors,1)])
+      returning * into p;
+    return p;
   end if;
   update returns_people set auth_user_id = uid, email = e, is_admin = inv.is_admin
     where id = p.id returning * into p;
