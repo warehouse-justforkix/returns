@@ -2,7 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/auto/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// A no-op lock replaces supabase's default navigator-lock. Returns and the Warehouse
+// Hub share one origin + one Supabase project (same auth-token storage key), so the
+// default cross-tab lock could deadlock a sign-in ("stuck on Signing in…") whenever a
+// Hub tab held it. This app has no concurrent-tab auth needs, so we skip the lock.
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { lock: async (_name, _timeout, fn) => await fn() },
+});
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
