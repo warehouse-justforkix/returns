@@ -220,28 +220,42 @@ function showGate(msg, err) {
 function hideGate() { $("#authGate").hidden = true; }
 
 // After auth: claim/create the profile server-side, then boot the app (or bounce).
+let _routing = false;   // re-entrancy guard: auth events can fire route() more than once
 async function route() {
-  let session;
-  try { ({ data: { session } } = await sb.auth.getSession()); }
-  catch (e) { showGate("Couldn’t read your session — tap reset just below. (" + e.message + ")", true); return; }
-  if (!session) { state.me = null; state.isAdmin = false; applyAdmin(); showGate(""); return; }
-  setAuthStatus("Loading your profile…");
-  const { data: me, error } = await sb.rpc("returns_claim_profile");
-  if (error) {
-    if (/not invited/i.test(error.message)) {
-      showGate(`Signed in as ${session.user.email}, but that email isn’t invited yet. Ask Karley to add you, then sign in again.`, true);
-    } else { showGate("Load problem: " + error.message, true); }
-    return;
-  }
-  const person = Array.isArray(me) ? me[0] : me;
-  state.me = person; state.isAdmin = !!person.is_admin;
-  applyAdmin(); hideGate();
-  $("#userChip").textContent = `${person.name}${person.is_admin ? " · admin" : ""}`;
-  $("#userChip").hidden = false; $("#signOutBtn").hidden = false;
-  await loadAll();
-  renderEntryPickers();
-  refreshAll();
-  if (state.isAdmin) renderInvites();
+  if (_routing) return;                 // never let two claims run at once (row-lock deadlock)
+  _routing = true;
+  try {
+    let session;
+    try { ({ data: { session } } = await sb.auth.getSession()); }
+    catch (e) { showGate("Couldn’t read your session — tap reset just below. (" + e.message + ")", true); return; }
+    if (!session) { state.me = null; state.isAdmin = false; applyAdmin(); showGate(""); return; }
+
+    setAuthStatus("Loading your profile…");
+    let me, error;
+    try {
+      const claim = sb.rpc("returns_claim_profile");
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000));
+      ({ data: me, error } = await Promise.race([claim, timeout]));
+    } catch {
+      showGate("Loading your profile timed out — tap “reset and retry” below, then sign in again.", true);
+      return;
+    }
+    if (error) {
+      if (/not invited/i.test(error.message)) {
+        showGate(`Signed in as ${session.user.email}, but that email isn’t invited yet. Ask Karley to add you, then sign in again.`, true);
+      } else { showGate("Load problem: " + error.message, true); }
+      return;
+    }
+    const person = Array.isArray(me) ? me[0] : me;
+    state.me = person; state.isAdmin = !!person.is_admin;
+    applyAdmin(); hideGate();
+    $("#userChip").textContent = `${person.name}${person.is_admin ? " · admin" : ""}`;
+    $("#userChip").hidden = false; $("#signOutBtn").hidden = false;
+    await loadAll();
+    renderEntryPickers();
+    refreshAll();
+    if (state.isAdmin) renderInvites();
+  } finally { _routing = false; }
 }
 
 sb.auth.onAuthStateChange(async (event) => {
