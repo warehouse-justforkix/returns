@@ -7,6 +7,40 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Login gate -->
+  <div id="authGate" class="auth-gate" hidden>
+    <div class="auth-card">
+      <div class="auth-brand"><span class="dot"></span><h1>Returns &amp; Refunds Tracker</h1></div>
+      <p class="muted small" id="authMode">Sign in to your JFK account.</p>
+      <form id="authForm">
+        <input type="email" id="authEmail" placeholder="you@justforkix.com" autocomplete="email" required />
+        <input type="password" id="authPassword" placeholder="Password (8+ characters)" autocomplete="current-password" required />
+        <button type="submit" class="primary big" id="authSubmit">Sign in</button>
+      </form>
+      <div class="auth-links">
+        <button class="linkbtn" id="authToggle">New here? Create your account</button>
+        <button class="linkbtn" id="authForgot">Forgot password</button>
+      </div>
+      <p class="auth-status" id="authStatus"></p>
+      <p class="muted small">Access is by invite. Ask Karley to add your email if you can’t get in.</p>
+    </div>
+  </div>
+
+  <!-- Invites modal (admin) -->
+  <div id="invitesModal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="card-h"><h2>Who can sign in</h2><button class="ghost-btn" id="invitesClose">✕</button></div>
+      <form id="inviteForm" class="invite-form">
+        <input type="text"  id="inviteName"  placeholder="Name (e.g. Riley)" required />
+        <input type="email" id="inviteEmail" placeholder="their@email.com" required />
+        <label class="chk"><input type="checkbox" id="inviteAdmin" /> Admin</label>
+        <button type="submit" class="primary">Invite</button>
+      </form>
+      <p class="muted small" id="inviteHint">Match the name to an existing person to link their history (e.g. “Riley”).</p>
+      <ul class="invite-list" id="inviteList"></ul>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="brand">
       <span class="dot"></span>
@@ -14,7 +48,9 @@
     </div>
     <div class="who">
       <div class="seg" id="personSeg" role="tablist" aria-label="Who"></div>
-      <button id="adminBtn" class="ghost-btn wide" title="Admin — enter counts">🔒 Admin</button>
+      <span id="userChip" class="user-chip" hidden></span>
+      <button id="invitesBtn" class="ghost-btn wide admin-only" title="Manage who can sign in">✉︎ Invites</button>
+      <button id="signOutBtn" class="ghost-btn wide" hidden title="Sign out">Sign out</button>
       <button id="themeBtn" class="ghost-btn" title="Toggle light/dark" aria-label="Toggle theme">◐</button>
     </div>
   </header>

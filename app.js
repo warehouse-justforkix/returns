@@ -8,10 +8,12 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const state = {
   people: [],            // [{id,name,color}]
   entries: [],           // [{id,person_id,entry_date,amazon,shopify,program,at_errors,hours_spent,daily_total,note}]
-  selected: "team",      // person id or "team" — whose timer + highlighted stats
+  selected: "team",      // person id or "team" — whose stats are highlighted (viewing)
   range: 90,             // 30 | 90 | "all"
-  timer: { session: null, tick: null }, // running session for selected person
-  isAdmin: false,        // admin (Karley) unlocked → can enter counts
+  sessions: [],          // returns_timer_sessions rows (hours are derived from these)
+  timer: { session: null, tick: null }, // the logged-in person's running session
+  me: null,              // the logged-in person's returns_people row
+  isAdmin: false,        // from me.is_admin (set by the invite, server-side)
 };
 const charts = {};
 
@@ -43,14 +45,25 @@ function inRange(iso) {
 
 // ── Data load ───────────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: people, error: pe }, { data: entries, error: ee }] = await Promise.all([
+  const [{ data: people, error: pe }, { data: entries, error: ee }, { data: sessions }] = await Promise.all([
     sb.from("returns_people").select("*").order("name"),
     sb.from("returns_entries").select("*").order("entry_date"),
+    sb.from("returns_timer_sessions").select("*"),
   ]);
-  if (pe || ee) { toast("Load error — check Supabase setup"); console.error(pe || ee); return; }
-  state.people = people || [];
+  if (pe || ee) { toast("Load error"); console.error(pe || ee); return; }
+  state.people = (people || []).filter((p) => p.active !== false);
   state.entries = (entries || []).map((e) => ({ ...e, daily_total: e.daily_total ?? total(e) }));
+  state.sessions = sessions || [];
 }
+
+// Hours are DERIVED: the entry's stored hours_spent (historical / manual base)
+// plus the duration of every completed timer session for that person + day.
+function sessionHours(personId, date) {
+  return state.sessions
+    .filter((s) => s.person_id === personId && s.entry_date === date && s.ended_at)
+    .reduce((a, s) => a + (new Date(s.ended_at) - new Date(s.started_at)) / 3600000, 0);
+}
+function hoursFor(e) { return (e.hours_spent || 0) + sessionHours(e.person_id, e.entry_date); }
 
 // ── Person / range selectors ─────────────────────────────────────────────────────
 function renderPersonSeg() {
@@ -80,12 +93,12 @@ function fmtElapsed(ms) {
 async function loadTimer() {
   stopTick();
   state.timer.session = null;
-  const isPerson = state.selected !== "team";
-  $("#timerBtn").disabled = !isPerson;
-  $("#timerFor").textContent = isPerson ? `for ${personById(state.selected)?.name}` : "— pick a person";
-  if (!isPerson) { $("#timerDisplay").textContent = "00:00:00"; $("#timerBtn").textContent = "Start"; $("#timerDisplay").classList.remove("running"); return; }
+  const me = state.me;
+  $("#timerBtn").disabled = !me;
+  $("#timerFor").textContent = me ? `${me.name} — your timer` : "";
+  if (!me) { renderTimerIdle(); return; }
   const { data } = await sb.from("returns_timer_sessions")
-    .select("*").eq("person_id", state.selected).is("ended_at", null)
+    .select("*").eq("person_id", me.id).is("ended_at", null)
     .order("started_at", { ascending: false }).limit(1);
   if (data && data.length) { state.timer.session = data[0]; startTick(); }
   else renderTimerIdle();
@@ -105,33 +118,22 @@ function startTick() {
 function stopTick() { if (state.timer.tick) { clearInterval(state.timer.tick); state.timer.tick = null; } }
 
 async function onTimerBtn() {
-  if (state.selected === "team") return;
+  const me = state.me; if (!me) return;
   if (!state.timer.session) {
     const { data, error } = await sb.from("returns_timer_sessions")
-      .insert({ person_id: state.selected, entry_date: todayISO() }).select().single();
-    if (error) return toast("Couldn’t start timer");
+      .insert({ person_id: me.id, entry_date: todayISO() }).select().single();
+    if (error) { console.error(error); return toast("Couldn’t start timer"); }
     state.timer.session = data; startTick(); toast("Timer started");
   } else {
     const started = new Date(state.timer.session.started_at).getTime();
-    const hrs = Math.max(0, (Date.now() - started) / 3600000);
-    await sb.from("returns_timer_sessions").update({ ended_at: new Date().toISOString() }).eq("id", state.timer.session.id);
+    const mins = Math.round((Date.now() - started) / 60000);
+    const { error } = await sb.from("returns_timer_sessions")
+      .update({ ended_at: new Date().toISOString() }).eq("id", state.timer.session.id);
+    if (error) { console.error(error); return toast("Couldn’t stop timer"); }
     state.timer.session = null; stopTick(); renderTimerIdle();
-    await bankHours(hrs);
-    toast(`Banked ${hrs.toFixed(2)} h into today`);
+    await loadAll(); refreshExceptTimer();
+    toast(`Logged ${mins} min to today`);
   }
-}
-// add elapsed hours to today's entry for the selected person
-async function bankHours(hrs) {
-  const day = todayISO();
-  const existing = state.entries.find((e) => e.person_id === state.selected && e.entry_date === day);
-  const newHours = Number(((existing?.hours_spent || 0) + hrs).toFixed(2));
-  await sb.from("returns_entries").upsert(
-    { person_id: state.selected, entry_date: day,
-      amazon: existing?.amazon || 0, shopify: existing?.shopify || 0,
-      program: existing?.program || 0, at_errors: existing?.at_errors || 0,
-      hours_spent: newHours, note: existing?.note || null },
-    { onConflict: "person_id,entry_date" });
-  await loadAll(); refreshExceptTimer();
 }
 
 // ── Today entry form ──────────────────────────────────────────────────────────────
@@ -142,7 +144,7 @@ function entryTarget() {
   if (state.isAdmin) {
     return { personId: $("#entryPerson").value || null, date: $("#entryDate").value || todayISO() };
   }
-  return { personId: state.selected === "team" ? null : state.selected, date: todayISO() };
+  return { personId: state.me?.id || null, date: todayISO() };  // staff = their own today, read-only
 }
 function fields() { return ["f_amazon","f_shopify","f_program","f_at","f_hours"]; }
 function loadEntryForm() {
@@ -154,7 +156,7 @@ function loadEntryForm() {
 
   if (!personId) {
     fields().forEach((id) => $("#"+id).value = "");
-    $("#entryStatus").textContent = state.isAdmin ? "Choose a person" : "Pick your name (top-left)";
+    $("#entryStatus").textContent = "";
     calcEntry(); return;
   }
   const e = state.entries.find((x) => x.person_id === personId && x.entry_date === date);
@@ -162,20 +164,25 @@ function loadEntryForm() {
   $("#f_shopify").value = e?.shopify   || "";
   $("#f_program").value = e?.program   || "";
   $("#f_at").value      = e?.at_errors || "";
-  $("#f_hours").value   = e?.hours_spent || "";
+  // admin edits the manual "base" hours; staff see the derived total (base + timer) read-only
+  const sess = sessionHours(personId, date);
+  $("#f_hours").value = state.isAdmin ? (e?.hours_spent || "") : (((e?.hours_spent || 0) + sess) || "").toString();
   $("#entryStatus").textContent = state.isAdmin
     ? (e ? "Editing existing" : "New entry")
-    : (e ? "Karley enters counts · your timer logs hours" : "Nothing logged yet today");
+    : (sess ? "Karley enters counts · your timer logs hours" : "Karley enters counts · run your timer to log hours");
   calcEntry();
 }
 function calcEntry() {
-  const a = +$("#f_amazon").value||0, s = +$("#f_shopify").value||0, p = +$("#f_program").value||0, at = +$("#f_at").value||0, h = +$("#f_hours").value||0;
+  const a = +$("#f_amazon").value||0, s = +$("#f_shopify").value||0, p = +$("#f_program").value||0, at = +$("#f_at").value||0;
+  const { personId, date } = entryTarget();
+  // admin's Hours field is the base; add today's timer sessions for the true rate
+  const h = (+$("#f_hours").value||0) + (state.isAdmin && personId ? sessionHours(personId, date) : 0);
   const t = a+s+p+at;
   $("#calcTotal").textContent = t;
   $("#calcAvg").textContent = h > 0 ? (t/h).toFixed(1) + " /hr" : "—";
 }
 async function saveEntry() {
-  if (!state.isAdmin) return toast("Unlock Admin to enter counts");
+  if (!state.isAdmin) return toast("Only the admin can enter counts");
   const { personId, date } = entryTarget();
   if (!personId) return toast("Choose a person");
   const row = {
@@ -189,39 +196,86 @@ async function saveEntry() {
   await loadAll(); refreshExceptTimer(); toast("Saved");
 }
 
-// ── Admin lock (shared PIN in returns_settings) ─────────────────────────────────────
-async function getStoredPin() {
-  const { data } = await sb.from("returns_settings").select("value").eq("key", "admin_pin").maybeSingle();
-  return data ? data.value : null;
+// ── Auth: email invites (mirrors the Warehouse Hub) ─────────────────────────────────
+function applyAdmin() { document.body.classList.toggle("admin", state.isAdmin); }
+function setAuthStatus(msg, err) { const el = $("#authStatus"); el.textContent = msg || ""; el.classList.toggle("err", !!err); }
+function showGate(msg, err) {
+  $("#authGate").hidden = false;
+  $("#userChip").hidden = true; $("#signOutBtn").hidden = true;
+  if (msg !== undefined) setAuthStatus(msg, err);
 }
-function applyAdmin() {
-  document.body.classList.toggle("admin", state.isAdmin);
-  const b = $("#adminBtn");
-  b.textContent = state.isAdmin ? "🔓 Admin" : "🔒 Admin";
-  b.classList.toggle("on", state.isAdmin);
-}
-async function toggleAdmin() {
-  if (state.isAdmin) {                 // lock
-    state.isAdmin = false; localStorage.removeItem("returns_admin");
-    applyAdmin(); refreshExceptTimer(); toast("Locked"); return;
+function hideGate() { $("#authGate").hidden = true; }
+
+// After auth: claim/create the profile server-side, then boot the app (or bounce).
+async function route() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { state.me = null; state.isAdmin = false; applyAdmin(); showGate(""); return; }
+  const { data: me, error } = await sb.rpc("returns_claim_profile");
+  if (error) {
+    if (/not invited/i.test(error.message)) {
+      showGate(`Signed in as ${session.user.email}, but that email isn’t invited yet. Ask Karley to add you, then sign in again.`, true);
+    } else { showGate(error.message, true); }
+    return;
   }
-  const stored = await getStoredPin();  // unlock
-  if (!stored) {
-    const pin = prompt("No admin PIN set yet. Create one (this becomes the shared admin PIN):");
-    if (!pin) return;
-    await sb.from("returns_settings").upsert({ key: "admin_pin", value: pin });
-    unlock();
-  } else {
-    const pin = prompt("Enter admin PIN:");
-    if (pin == null) return;
-    if (pin !== stored) return toast("Wrong PIN");
-    unlock();
+  const person = Array.isArray(me) ? me[0] : me;
+  state.me = person; state.isAdmin = !!person.is_admin;
+  applyAdmin(); hideGate();
+  $("#userChip").textContent = `${person.name}${person.is_admin ? " · admin" : ""}`;
+  $("#userChip").hidden = false; $("#signOutBtn").hidden = false;
+  await loadAll();
+  renderEntryPickers();
+  refreshAll();
+  if (state.isAdmin) renderInvites();
+}
+
+sb.auth.onAuthStateChange(async (event) => {
+  if (event === "PASSWORD_RECOVERY") {
+    const np = prompt("Choose a new password (8+ characters):");
+    if (np) { const { error } = await sb.auth.updateUser({ password: np }); toast(error ? error.message : "Password updated"); }
   }
+  if (["SIGNED_IN", "SIGNED_OUT"].includes(event)) route();
+});
+
+async function doSignIn(email, password) {
+  setAuthStatus("Signing in…");
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) setAuthStatus(error.message, true); else setAuthStatus("");
 }
-function unlock() {
-  state.isAdmin = true; localStorage.setItem("returns_admin", "1");
-  applyAdmin(); renderEntryPickers(); refreshExceptTimer(); toast("Admin unlocked");
+async function doSignUp(email, password) {
+  if (!email || password.length < 8) return setAuthStatus("Enter your email and a password of at least 8 characters.", true);
+  setAuthStatus("Creating your account…");
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) return setAuthStatus(error.message, true);
+  if (!data.session) setAuthStatus("Account created — now sign in with those details.");
+  // with email-confirmation off, SIGNED_IN fires and route() takes over.
 }
+
+// ── Invites (admin) ─────────────────────────────────────────────────────────────────
+async function renderInvites() {
+  const { data: invites } = await sb.from("returns_invited_emails").select("*").order("name");
+  const linked = new Set(state.people.filter((p)=>p.email).map((p)=>p.email.toLowerCase()));
+  $("#inviteList").innerHTML = (invites||[]).map((i) => `
+    <li>
+      <span>${i.name}<span class="em"> · ${i.email}</span>
+        ${i.is_admin ? '<span class="badge">admin</span>' : ''}
+        ${linked.has(i.email) ? '' : '<span class="badge pending">not signed in</span>'}
+      </span>
+      ${i.email === "karley@justforkix.com" ? "" : `<button class="row-del" data-email="${i.email}" title="Remove">✕</button>`}
+    </li>`).join("") || `<li class="muted">No invites yet.</li>`;
+  $("#inviteList").querySelectorAll(".row-del").forEach((b) => b.onclick = async () => {
+    if (!confirm(`Remove invite for ${b.dataset.email}? They won’t be able to sign in.`)) return;
+    await sb.from("returns_invited_emails").delete().eq("email", b.dataset.email);
+    renderInvites();
+  });
+}
+async function addInvite(name, email, isAdmin) {
+  if (!name || !email) return toast("Name and email required");
+  const { error } = await sb.from("returns_invited_emails")
+    .insert({ name, email: email.toLowerCase(), is_admin: isAdmin });
+  if (error) return toast(error.message);
+  toast("Invited"); renderInvites();
+}
+
 function renderEntryPickers() {
   const sel = $("#entryPerson");
   const cur = sel.value;
@@ -233,8 +287,8 @@ function renderEntryPickers() {
 // ── Goals (localStorage per person) ────────────────────────────────────────────────
 function goalKey() { const p = personById(state.selected); return `returns_goal_${p ? p.name : "team"}`; }
 function suggestedGoal(entries) {
-  const timed = entries.filter((e) => e.hours_spent > 0);
-  const th = timed.reduce((a,e) => a + e.hours_spent, 0);
+  const timed = entries.filter((e) => hoursFor(e) > 0);
+  const th = timed.reduce((a,e) => a + hoursFor(e), 0);
   const tt = timed.reduce((a,e) => a + e.daily_total, 0);
   const avg = th ? tt/th : 30;
   return Math.max(5, Math.ceil(avg / 5) * 5); // round up to nearest 5
@@ -247,8 +301,8 @@ function getGoal(entries) {
 // ── Stat tiles ────────────────────────────────────────────────────────────────────
 function renderTiles() {
   const scope = scopeEntries();
-  const timed = scope.filter((e) => e.hours_spent > 0);
-  const th = timed.reduce((a,e) => a + e.hours_spent, 0);
+  const timed = scope.filter((e) => hoursFor(e) > 0);
+  const th = timed.reduce((a,e) => a + hoursFor(e), 0);
   const tt = timed.reduce((a,e) => a + e.daily_total, 0);
   const avg = th ? tt/th : null;
   const inR = scope.filter((e) => inRange(e.entry_date));
@@ -327,8 +381,8 @@ function renderCharts() {
     type: "line",
     data: { labels, datasets: [
       ...state.people.map((p) => {
-        const byDate = Object.fromEntries(state.entries.filter((e)=>e.person_id===p.id && e.hours_spent>0)
-          .map((e)=>[e.entry_date, +(e.daily_total/e.hours_spent).toFixed(1)]));
+        const byDate = Object.fromEntries(state.entries.filter((e)=>e.person_id===p.id && hoursFor(e)>0)
+          .map((e)=>[e.entry_date, +(e.daily_total/hoursFor(e)).toFixed(1)]));
         const c = seriesForPerson(p);
         return { label: p.name, data: dates.map((d)=> byDate[d] ?? null), borderColor: c, backgroundColor: c,
                  borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, tension: .25, spanGaps: true };
@@ -363,14 +417,15 @@ function renderTable() {
   const tb = $("#entriesTable tbody");
   tb.innerHTML = rows.map((e) => {
     const p = personById(e.person_id);
-    const avg = e.hours_spent > 0 ? (e.daily_total/e.hours_spent).toFixed(1) : "—";
+    const h = hoursFor(e);
+    const avg = h > 0 ? (e.daily_total/h).toFixed(1) : "—";
     return `<tr>
       <td>${fmtDate(e.entry_date)}${e.note ? `<span class="note-badge" title="${e.note}">range</span>` : ""}</td>
       <td><span class="swatch" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${seriesForPerson(p)};margin-right:6px"></span>${p?.name||"?"}</td>
       <td class="num">${e.amazon||""}</td><td class="num">${e.shopify||""}</td>
       <td class="num">${e.program||""}</td><td class="num">${e.at_errors||""}</td>
       <td class="num"><strong>${e.daily_total}</strong></td>
-      <td class="num">${e.hours_spent||"—"}</td><td class="num">${avg}</td>
+      <td class="num">${h ? h.toFixed(2) : "—"}</td><td class="num">${avg}</td>
       <td><button class="row-del admin-only" data-id="${e.id}" title="Delete">✕</button></td>
     </tr>`;
   }).join("") || `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No entries in this range.</td></tr>`;
@@ -405,22 +460,48 @@ function wire() {
   fields().forEach((id)=> $("#"+id).addEventListener("input", calcEntry));
   $("#saveBtn").onclick = saveEntry;
   $("#timerBtn").onclick = onTimerBtn;
-  $("#adminBtn").onclick = toggleAdmin;
   $("#entryPerson").addEventListener("change", loadEntryForm);
   $("#entryDate").addEventListener("change", loadEntryForm);
   $("#goalInput").addEventListener("change", () => {
     localStorage.setItem(goalKey(), String(+$("#goalInput").value || 0));
     renderTiles(); renderCharts();
   });
+  // ── auth ──
+  let mode = "in";
+  $("#authForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = $("#authEmail").value.trim(), pw = $("#authPassword").value;
+    (mode === "in" ? doSignIn : doSignUp)(email, pw);
+  });
+  $("#authToggle").onclick = () => {
+    mode = mode === "in" ? "up" : "in";
+    $("#authSubmit").textContent = mode === "in" ? "Sign in" : "Create account";
+    $("#authMode").textContent = mode === "in" ? "Sign in to your JFK account." : "Create your account with your invited email.";
+    $("#authToggle").textContent = mode === "in" ? "New here? Create your account" : "Already have an account? Sign in";
+    $("#authPassword").autocomplete = mode === "in" ? "current-password" : "new-password";
+    setAuthStatus("");
+  };
+  $("#authForgot").onclick = async () => {
+    const email = $("#authEmail").value.trim();
+    if (!email) return setAuthStatus("Type your email above first.", true);
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    setAuthStatus(error ? error.message : "Reset link sent — check your email.", !!error);
+  };
+  $("#signOutBtn").onclick = () => sb.auth.signOut();
+  // ── invites ──
+  $("#invitesBtn").onclick = () => { renderInvites(); $("#invitesModal").hidden = false; };
+  $("#invitesClose").onclick = () => { $("#invitesModal").hidden = true; };
+  $("#invitesModal").addEventListener("click", (e) => { if (e.target.id === "invitesModal") $("#invitesModal").hidden = true; });
+  $("#inviteForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    addInvite($("#inviteName").value.trim(), $("#inviteEmail").value.trim(), $("#inviteAdmin").checked);
+    e.target.reset();
+  });
 }
 
 // ── Boot ────────────────────────────────────────────────────────────────────────
 (async function boot() {
   initTheme(); wire(); renderRangeSeg();
-  state.isAdmin = localStorage.getItem("returns_admin") === "1";
-  applyAdmin();
-  await loadAll();
-  if (!state.people.length) { toast("No data yet — run db/setup.sql + seed.sql"); }
-  if (state.isAdmin) renderEntryPickers();
-  refreshAll();
+  showGate("");        // cover the app until we know who's signed in
+  await route();       // session? → claim + load; otherwise the gate stays up
 })();

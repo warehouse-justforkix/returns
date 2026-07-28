@@ -177,6 +177,54 @@ tbody tr:hover { background: var(--plane); }
 .note-badge { font-size: 10px; color: var(--muted); border: 1px solid var(--border);
   border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
 
+/* ── Auth gate ─────────────────────────────────────────────────────────────── */
+.auth-gate {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: var(--plane); padding: 20px;
+}
+.auth-card {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 28px; width: 100%; max-width: 380px;
+}
+.auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.auth-brand h1 { font-size: 18px; margin: 0; font-weight: 650; }
+.auth-brand .dot { width: 12px; height: 12px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--series-1), var(--series-2)); }
+#authForm { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 10px; }
+#authForm input {
+  font: inherit; font-size: 15px; padding: 11px 12px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--plane); color: var(--ink); width: 100%;
+}
+#authForm input:focus { outline: 2px solid var(--series-1); outline-offset: -1px; }
+#authForm .big { width: 100%; }
+.auth-links { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.linkbtn { border: 0; background: none; color: var(--series-1); font: inherit; font-size: 13px; cursor: pointer; padding: 2px; }
+.linkbtn:hover { text-decoration: underline; }
+.auth-status { font-size: 13px; min-height: 18px; margin: 4px 0; color: var(--ink-2); }
+.auth-status.err { color: #d03b3b; }
+
+/* User chip + sign out */
+.user-chip { font-size: 13px; font-weight: 600; color: var(--ink-2); padding: 0 4px; }
+
+/* ── Modal (invites) ───────────────────────────────────────────────────────── */
+.modal { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.35); padding: 20px; }
+.modal-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px; width: 100%; max-width: 460px; }
+.invite-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.invite-form input[type=text] { flex: 1 1 120px; }
+.invite-form input[type=email] { flex: 2 1 180px; }
+.invite-form input { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--plane); color: var(--ink); }
+.invite-form .chk { font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 5px; }
+.invite-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.invite-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.invite-list .badge { font-size: 10px; font-weight: 700; color: #fff; background: var(--series-1);
+  border-radius: 5px; padding: 1px 6px; margin-left: 6px; }
+.invite-list .badge.pending { background: var(--muted); }
+.invite-list .em { color: var(--muted); font-size: 12px; }
+
 /* ── Toast ─────────────────────────────────────────────────────────────────── */
 .toast {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
