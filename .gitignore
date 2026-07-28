@@ -1,0 +1,4 @@
+.playwright-mcp/
+*.png
+scratchpad/
+.DS_Store

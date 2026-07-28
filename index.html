@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Returns &amp; Refunds Tracker · JFK</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>Returns &amp; Refunds Tracker</h1>
+    </div>
+    <div class="who">
+      <div class="seg" id="personSeg" role="tablist" aria-label="Who"></div>
+      <button id="adminBtn" class="ghost-btn wide" title="Admin — enter counts">🔒 Admin</button>
+      <button id="themeBtn" class="ghost-btn" title="Toggle light/dark" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- Timer + Today entry -->
+    <section class="grid-two">
+      <div class="card timer-card">
+        <div class="card-h">
+          <h2>Timer</h2>
+          <span class="muted" id="timerFor"></span>
+        </div>
+        <div class="timer-display" id="timerDisplay">00:00:00</div>
+        <div class="timer-actions">
+          <button id="timerBtn" class="primary big">Start</button>
+          <span class="muted small" id="timerHint">Banks into today’s Hours Spent when you stop.</span>
+        </div>
+      </div>
+
+      <div class="card entry-card">
+        <div class="card-h">
+          <h2 id="entryHeading">Today · <span id="todayLabel"></span></h2>
+          <div class="entry-pickers admin-only">
+            <select id="entryPerson" title="Log for"></select>
+            <input type="date" id="entryDate" title="Date" />
+          </div>
+          <span class="muted small" id="entryStatus"></span>
+        </div>
+        <div class="entry-grid">
+          <label>Amazon <input type="number" min="0" id="f_amazon" inputmode="numeric" /></label>
+          <label>Shopify <input type="number" min="0" id="f_shopify" inputmode="numeric" /></label>
+          <label>Program <input type="number" min="0" id="f_program" inputmode="numeric" /></label>
+          <label>AT Errors <input type="number" min="0" id="f_at" inputmode="numeric" /></label>
+          <label>Hours Spent <input type="number" min="0" step="0.01" id="f_hours" inputmode="decimal" /></label>
+        </div>
+        <div class="entry-calc">
+          <div class="calc"><span class="muted small">Daily Total</span><strong id="calcTotal">0</strong></div>
+          <div class="calc"><span class="muted small">Avg / Hour</span><strong id="calcAvg">—</strong></div>
+          <button id="saveBtn" class="primary admin-only">Save entry</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stat tiles -->
+    <section class="tiles" id="tiles"></section>
+
+    <!-- Charts -->
+    <section class="card chart-card">
+      <div class="card-h">
+        <h2>Daily total refunds</h2>
+        <div class="range" id="rangeSeg" role="tablist" aria-label="Range"></div>
+      </div>
+      <div class="chart-wrap"><canvas id="chartTotals"></canvas></div>
+    </section>
+
+    <section class="grid-two">
+      <div class="card chart-card">
+        <div class="card-h">
+          <h2>Speed · avg per hour</h2>
+          <label class="goal-inline">Goal <input type="number" min="0" id="goalInput" /> /hr</label>
+        </div>
+        <div class="chart-wrap"><canvas id="chartSpeed"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <div class="card-h"><h2>Channel mix</h2></div>
+        <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
+      </div>
+    </section>
+
+    <!-- Recent entries table -->
+    <section class="card">
+      <div class="card-h"><h2>Recent entries</h2></div>
+      <div class="table-wrap">
+        <table id="entriesTable">
+          <thead>
+            <tr><th>Date</th><th>Who</th><th class="num">Amazon</th><th class="num">Shopify</th>
+                <th class="num">Program</th><th class="num">AT</th><th class="num">Total</th>
+                <th class="num">Hrs</th><th class="num">/hr</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
