@@ -200,6 +200,7 @@ tbody tr:hover { background: var(--plane); }
 .auth-links { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .linkbtn { border: 0; background: none; color: var(--series-1); font: inherit; font-size: 13px; cursor: pointer; padding: 2px; }
 .linkbtn:hover { text-decoration: underline; }
+.linkbtn.subtle { display: block; margin: 10px auto 0; color: var(--muted); font-size: 12px; }
 .auth-status { font-size: 13px; min-height: 18px; margin: 4px 0; color: var(--ink-2); }
 .auth-status.err { color: #d03b3b; }
 

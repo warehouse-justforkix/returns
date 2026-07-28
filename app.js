@@ -240,8 +240,13 @@ sb.auth.onAuthStateChange(async (event) => {
 
 async function doSignIn(email, password) {
   setAuthStatus("Signing in…");
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) setAuthStatus(error.message, true); else setAuthStatus("");
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000));
+  try {
+    const { error } = await Promise.race([sb.auth.signInWithPassword({ email, password }), timeout]);
+    if (error) setAuthStatus(error.message, true); else setAuthStatus("");
+  } catch {
+    setAuthStatus("Sign-in got stuck — tap “reset and retry” just below, then sign in again.", true);
+  }
 }
 async function doSignUp(email, password) {
   if (!email || password.length < 8) return setAuthStatus("Enter your email and a password of at least 8 characters.", true);
@@ -490,6 +495,12 @@ function wire() {
     setAuthStatus(error ? error.message : "Reset link sent — check your email.", !!error);
   };
   $("#signOutBtn").onclick = () => sb.auth.signOut();
+  $("#authReset").onclick = async () => {
+    setAuthStatus("Resetting…");
+    try { await sb.auth.signOut({ scope: "local" }); } catch {}
+    try { Object.keys(localStorage).filter((k) => k.startsWith("sb-")).forEach((k) => localStorage.removeItem(k)); } catch {}
+    location.replace(location.origin + location.pathname);   // clean URL drops any leftover #recovery hash
+  };
   // ── invites ──
   $("#invitesBtn").onclick = () => { renderInvites(); $("#invitesModal").hidden = false; };
   $("#invitesClose").onclick = () => { $("#invitesModal").hidden = true; };
