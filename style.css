@@ -78,7 +78,12 @@ body {
 .brand-logo { height: 34px; width: auto; display: block;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
 .brand-sep { width: 1px; height: 24px; background: rgba(255,255,255,.5); margin: 0 3px; }
-.who { display: flex; align-items: center; gap: 10px; }
+.who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 620px) {
+  .topbar { padding: 12px 14px; gap: 10px; }
+  .brand h1 { font-size: 15px; }
+  .who { width: 100%; justify-content: flex-start; }
+}
 /* Person toggles: each button is filled with that person's color; the selected
    one is a lighter tint of the same shade (bg + text are set inline in JS). */
 .topbar .seg { background: transparent; border: 0; padding: 0; gap: 6px; }
@@ -131,15 +136,20 @@ body.admin button.admin-only { display: inline-block !important; }
 }
 
 /* ── Layout ────────────────────────────────────────────────────────────────── */
-main { max-width: 1080px; margin: 0 auto; padding: 20px; display: grid; gap: 18px; }
-.grid-two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-@media (max-width: 760px) { .grid-two { grid-template-columns: 1fr; } }
+/* minmax(0,1fr) so columns can shrink below content (charts/tables) on small
+   screens — otherwise a fixed-width canvas forces the whole page wider. */
+main { max-width: 1080px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.grid-two { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; }
+@media (max-width: 760px) { .grid-two { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 560px) { main { padding: 14px; gap: 14px; } }
 
 .card {
   background: var(--surface-1); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+  min-width: 0;   /* allow shrinking inside grid tracks on small screens */
 }
-.card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 560px) { .card { padding: 14px; } }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .card-h h2 { font-size: 14px; margin: 0; font-weight: 600; letter-spacing: .01em; color: var(--ink); }
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
@@ -165,9 +175,10 @@ button.primary.stop { background: #d03b3b; color: #fff; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Entry form ────────────────────────────────────────────────────────────── */
-.entry-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-@media (max-width: 620px) { .entry-grid { grid-template-columns: repeat(2, 1fr); } }
-.entry-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11px;
+.entry-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+@media (max-width: 620px) { .entry-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 380px) { .entry-grid { grid-template-columns: minmax(0,1fr); } }
+.entry-grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 11px;
   font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .03em; }
 .entry-grid input, .goal-inline input, #goalInput {
   font: inherit; font-size: 16px; font-weight: 500; padding: 8px 10px;
@@ -181,16 +192,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .entry-calc .primary { margin-left: auto; }
 
 /* ── Stat tiles ────────────────────────────────────────────────────────────── */
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
 
 /* Staff has no data-entry card, so let the timer fill its row */
-body:not(.admin) #topRow { grid-template-columns: 1fr; }
+body:not(.admin) #topRow { grid-template-columns: minmax(0,1fr); }
 /* When the timer is hidden, the remaining card (entry) spans the full width */
-#topRow.timer-hidden { grid-template-columns: 1fr; }
+#topRow.timer-hidden { grid-template-columns: minmax(0,1fr); }
 
 /* This week's improvement */
-.improve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 640px) { .improve-grid { grid-template-columns: 1fr; } }
+.improve-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+@media (max-width: 640px) { .improve-grid { grid-template-columns: minmax(0,1fr); } }
 .improve-block { background: var(--plane); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
 .improve-block .k { font-size: 12px; color: var(--muted); font-weight: 600; }
 .improve-block .v { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 3px 0 8px; }
@@ -201,7 +212,8 @@ body:not(.admin) #topRow { grid-template-columns: 1fr; }
 .delta.down { color: #d03b3b; background: rgba(208,59,59,.12); }
 .delta.flat { color: var(--muted); font-weight: 600; }
 .delta .muted { font-weight: 500; }
-@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 380px) { .tiles { grid-template-columns: minmax(0,1fr); } }
 .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 16px; box-shadow: var(--shadow); }
 .tile .k { font-size: 12px; color: var(--muted); font-weight: 600; }
@@ -210,13 +222,15 @@ body:not(.admin) #topRow { grid-template-columns: 1fr; }
 .tile .v small { font-size: 14px; font-weight: 500; color: var(--muted); }
 
 /* ── Charts ────────────────────────────────────────────────────────────────── */
-.chart-wrap { position: relative; height: 300px; }
+.chart-wrap { position: relative; height: 300px; min-width: 0; width: 100%; }
+.chart-wrap canvas { max-width: 100%; }
 .grid-two .chart-wrap { height: 240px; }
+@media (max-width: 560px) { .chart-wrap { height: 240px; } .grid-two .chart-wrap { height: 220px; } }
 .goal-inline { font-size: 12px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .goal-inline input { width: 64px; font-size: 14px; padding: 5px 8px; }
 
 /* ── Table ─────────────────────────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; min-width: 0; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; }
