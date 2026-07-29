@@ -588,10 +588,9 @@ function renderTable() {
   if (moreBtn) {
     if (moreCount > 0) {
       moreBtn.hidden = false;
-      const label = state.entriesExpanded
+      moreBtn.textContent = state.entriesExpanded
         ? "Show less"
         : `View more — ${moreCount} earlier ${moreCount === 1 ? "entry" : "entries"}`;
-      moreBtn.innerHTML = `${label} <span class="chev${state.entriesExpanded ? " up" : ""}">⌄</span>`;
     } else {
       moreBtn.hidden = true;
       state.entriesExpanded = false;

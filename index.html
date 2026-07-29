@@ -163,14 +163,14 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=16"></script>
+  <script type="module" src="app.js?v=17"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=16").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=17").catch(() => {}));
     }
   </script>
 </body>
