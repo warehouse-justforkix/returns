@@ -186,6 +186,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   color: var(--ink); width: 100%;
 }
 .entry-grid input:focus, #goalInput:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.entry-grid .hm { display: flex; align-items: center; gap: 5px; }
+.entry-grid .hm input { width: 100%; min-width: 0; text-align: right; }
+.hm-u { color: var(--muted); font-size: 13px; font-weight: 600; }
 .entry-calc { display: flex; align-items: center; gap: 22px; margin-top: 14px; flex-wrap: wrap; }
 .calc { display: flex; flex-direction: column; }
 .calc strong { font-size: 24px; font-weight: 650; }
@@ -247,6 +250,8 @@ tr.editing { background: var(--brand-tint); }
   font: inherit; font-size: 13px; text-align: right; background: var(--surface-1); color: var(--ink);
 }
 .row-inp:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.hm-cell { display: inline-flex; align-items: center; gap: 3px; justify-content: flex-end; }
+.hm-cell .row-inp { width: 40px; }
 .row-save {
   border: 0; background: var(--brand); color: #fff; font: inherit; font-size: 12px;
   font-weight: 700; padding: 5px 12px; border-radius: 7px; cursor: pointer; margin-right: 4px;

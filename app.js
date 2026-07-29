@@ -186,7 +186,10 @@ function entryTarget() {
   }
   return { personId: state.me?.id || null, date: todayISO() };  // staff = their own today, read-only
 }
-function fields() { return ["f_amazon","f_shopify","f_program","f_at","f_hours"]; }
+function fields() { return ["f_amazon","f_shopify","f_program","f_at","f_hours","f_minutes"]; }
+// Split decimal hours ↔ whole hours + minutes for the Time Spent inputs.
+function hoursToHM(dec) { const h = Math.floor(dec || 0); const m = Math.round(((dec || 0) - h) * 60); return { h, m }; }
+function hmToHours() { return (+$("#f_hours").value || 0) + (+$("#f_minutes").value || 0) / 60; }
 function fieldsEmpty() { return fields().every((id) => !$("#"+id).value); }
 function loadEntryForm(force = false) {
   const { personId, date } = entryTarget();
@@ -213,7 +216,10 @@ function loadEntryForm(force = false) {
     $("#f_program").value = e?.program   || "";
     $("#f_at").value      = e?.at_errors || "";
     // admin edits the manual "base" hours; staff see the derived total (base + timer) read-only
-    $("#f_hours").value = state.isAdmin ? (e?.hours_spent || "") : (((e?.hours_spent || 0) + sess) || "").toString();
+    const baseHours = state.isAdmin ? (e?.hours_spent || 0) : ((e?.hours_spent || 0) + sess);
+    const { h, m } = hoursToHM(baseHours);
+    $("#f_hours").value = h || "";
+    $("#f_minutes").value = m || "";
   }
   $("#entryStatus").textContent = state.isAdmin
     ? (e ? "Editing existing" : "New entry")
@@ -223,8 +229,8 @@ function loadEntryForm(force = false) {
 function calcEntry() {
   const a = +$("#f_amazon").value||0, s = +$("#f_shopify").value||0, p = +$("#f_program").value||0, at = +$("#f_at").value||0;
   const { personId, date } = entryTarget();
-  // admin's Hours field is the base; add today's timer sessions for the true rate
-  const h = (+$("#f_hours").value||0) + (state.isAdmin && personId ? sessionHours(personId, date) : 0);
+  // admin's Time Spent (h+m) is the base; add today's timer sessions for the true rate
+  const h = hmToHours() + (state.isAdmin && personId ? sessionHours(personId, date) : 0);
   const t = a+s+p+at;
   $("#calcTotal").textContent = t;
   $("#calcAvg").textContent = h > 0 ? (t/h).toFixed(1) + " /hr" : "—";
@@ -237,7 +243,7 @@ async function saveEntry() {
     person_id: personId, entry_date: date,
     amazon: +$("#f_amazon").value||0, shopify: +$("#f_shopify").value||0,
     program: +$("#f_program").value||0, at_errors: +$("#f_at").value||0,
-    hours_spent: +$("#f_hours").value||0,
+    hours_spent: hmToHours(),
   };
   const { error } = await sb.from("returns_entries").upsert(row, { onConflict: "person_id,entry_date" });
   if (error) { console.error(error); return toast("Save failed"); }
@@ -577,7 +583,10 @@ function renderTable() {
         ${inpCell("amazon", e.amazon)}${inpCell("shopify", e.shopify)}
         ${inpCell("program", e.program)}${inpCell("at_errors", e.at_errors)}
         <td class="num"><strong>${e.daily_total}</strong></td>
-        ${inpCell("hours_spent", e.hours_spent, "0.01")}<td class="num">${avg}</td>
+        <td class="num"><span class="hm hm-cell">
+          <input class="row-inp" data-f="hours_h" type="number" min="0" value="${hoursToHM(e.hours_spent).h || ""}"><span class="hm-u">h</span>
+          <input class="row-inp" data-f="hours_m" type="number" min="0" max="59" value="${hoursToHM(e.hours_spent).m || ""}"><span class="hm-u">m</span>
+        </span></td><td class="num">${avg}</td>
         <td class="row-actions">
           <button class="row-save" data-id="${e.id}" title="Save changes">Save</button>
           <button class="row-cancel" title="Cancel">✕</button>
@@ -620,7 +629,7 @@ function renderTable() {
     const row = {
       person_id: e.person_id, entry_date: e.entry_date,
       amazon: val("amazon"), shopify: val("shopify"), program: val("program"),
-      at_errors: val("at_errors"), hours_spent: val("hours_spent"),
+      at_errors: val("at_errors"), hours_spent: val("hours_h") + val("hours_m") / 60,
     };
     const { error } = await sb.from("returns_entries").upsert(row, { onConflict: "person_id,entry_date" });
     if (error) { console.error(error); return toast("Save failed"); }

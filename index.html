@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="JFK Returns" />
 
-  <link rel="stylesheet" href="style.css?v=22" />
+  <link rel="stylesheet" href="style.css?v=23" />
 </head>
 <body>
   <!-- Login gate -->
@@ -99,7 +99,12 @@
           <label>Shopify <input type="number" min="0" id="f_shopify" inputmode="numeric" /></label>
           <label>Program <input type="number" min="0" id="f_program" inputmode="numeric" /></label>
           <label>AT Errors <input type="number" min="0" id="f_at" inputmode="numeric" /></label>
-          <label>Hours Spent <input type="number" min="0" step="0.01" id="f_hours" inputmode="decimal" /></label>
+          <label>Time Spent
+            <span class="hm">
+              <input type="number" min="0" id="f_hours" inputmode="numeric" placeholder="0" /><span class="hm-u">h</span>
+              <input type="number" min="0" max="59" id="f_minutes" inputmode="numeric" placeholder="0" /><span class="hm-u">m</span>
+            </span>
+          </label>
         </div>
         <div class="entry-calc">
           <div class="calc"><span class="muted small">Daily Total</span><strong id="calcTotal">0</strong></div>
@@ -163,14 +168,14 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=21"></script>
+  <script type="module" src="app.js?v=23"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=22").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=23").catch(() => {}));
     }
   </script>
 </body>
