@@ -8,12 +8,12 @@
 // when the network is unavailable. Cross-origin requests (Supabase API,
 // esm.sh, jsDelivr) are left entirely to the browser — never intercepted.
 
-const CACHE = "jfk-returns-v15";
+const CACHE = "jfk-returns-v16";
 const SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=15",
-  "./app.js?v=15",
+  "./style.css?v=16",
+  "./app.js?v=16",
   "./config.js",
   "./jfk-logo.png?v=12",
   "./jfk-logo-white.png?v=13",

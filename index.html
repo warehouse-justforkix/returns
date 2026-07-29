@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="JFK Returns" />
 
-  <link rel="stylesheet" href="style.css?v=15" />
+  <link rel="stylesheet" href="style.css?v=16" />
 </head>
 <body>
   <!-- Login gate -->
@@ -72,7 +72,7 @@
 
   <main id="app">
     <!-- Timer + Today entry -->
-    <section class="grid-two">
+    <section class="grid-two" id="topRow">
       <div class="card timer-card">
         <div class="card-h">
           <h2>Timer</h2>
@@ -85,7 +85,7 @@
         </div>
       </div>
 
-      <div class="card entry-card">
+      <div class="card entry-card admin-only">
         <div class="card-h">
           <h2 id="entryHeading">Today · <span id="todayLabel"></span></h2>
           <div class="entry-pickers admin-only">
@@ -111,6 +111,15 @@
 
     <!-- Stat tiles -->
     <section class="tiles" id="tiles"></section>
+
+    <!-- This week's improvement -->
+    <section class="card improve-card">
+      <div class="card-h">
+        <h2>This week's improvement</h2>
+        <span class="muted small" id="improveWho"></span>
+      </div>
+      <div class="improve-grid" id="improveGrid"></div>
+    </section>
 
     <!-- Charts -->
     <section class="card chart-card">
@@ -154,14 +163,14 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=15"></script>
+  <script type="module" src="app.js?v=16"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=15").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=16").catch(() => {}));
     }
   </script>
 </body>

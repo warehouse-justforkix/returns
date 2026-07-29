@@ -79,10 +79,18 @@ body {
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
 .brand-sep { width: 1px; height: 24px; background: rgba(255,255,255,.5); margin: 0 3px; }
 .who { display: flex; align-items: center; gap: 10px; }
-/* On the magenta band, the controls become translucent-white chips */
-.topbar .seg, .topbar .range { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.28); }
-.topbar .seg button, .topbar .range button { color: rgba(255,255,255,.9); }
-.topbar .seg button[aria-selected="true"] { background: #fff; color: var(--brand-deep); box-shadow: none; }
+/* Person toggles: each button is filled with that person's color; the selected
+   one is a lighter tint of the same shade (bg + text are set inline in JS). */
+.topbar .seg { background: transparent; border: 0; padding: 0; gap: 6px; }
+.topbar .seg button {
+  border-radius: 8px; padding: 6px 15px; font-weight: 700;
+  text-shadow: 0 1px 1px rgba(0,0,0,.18);
+  border: 1px solid rgba(0,0,0,.06); box-shadow: 0 1px 2px rgba(0,0,0,.14);
+}
+.topbar .seg button[aria-selected="true"] {
+  text-shadow: none;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.75), 0 1px 2px rgba(0,0,0,.14);
+}
 .topbar .ghost-btn { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.3); color: #fff; }
 .topbar .ghost-btn:hover { background: rgba(255,255,255,.26); }
 .topbar .user-chip { color: #fff; }
@@ -174,6 +182,23 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Stat tiles ────────────────────────────────────────────────────────────── */
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+/* Staff has no data-entry card, so let the timer fill its row */
+body:not(.admin) #topRow { grid-template-columns: 1fr; }
+
+/* This week's improvement */
+.improve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 640px) { .improve-grid { grid-template-columns: 1fr; } }
+.improve-block { background: var(--plane); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.improve-block .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.improve-block .v { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 3px 0 8px; }
+.improve-block .v small { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+.improve-sub { display: block; }
+.delta { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 7px; }
+.delta.up { color: var(--good); background: rgba(12,163,12,.12); }
+.delta.down { color: #d03b3b; background: rgba(208,59,59,.12); }
+.delta.flat { color: var(--muted); font-weight: 600; }
+.delta .muted { font-weight: 500; }
 @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
 .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 16px; box-shadow: var(--shadow); }

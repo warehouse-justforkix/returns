@@ -41,6 +41,19 @@ const personById = (id) => state.people.find((p) => p.id === id);
 const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const total = (e) => e.amazon + e.shopify + e.program + e.at_errors;
 
+// Color mixing (for the person toggles: full color, lighter when selected)
+function hexToRgb(h) {
+  h = (h || "").trim().replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function mix(hex, target, t) {
+  const a = hexToRgb(hex);
+  return `rgb(${a.map((v,i) => Math.round(v + (target[i]-v)*t)).join(",")})`;
+}
+const lighten = (hex, t) => mix(hex, [255,255,255], t);
+const darken  = (hex, t) => mix(hex, [0,0,0], t);
+
 function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.hidden = false;
   clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2200);
@@ -84,10 +97,13 @@ function renderPersonSeg() {
   const seg = $("#personSeg");
   const opts = [{ id: "team", name: "Team", color: cssVar("--team") }, ...state.people];
   seg.innerHTML = opts.map((o) => {
-    const c = o.id === "team" ? o.color : seriesForPerson(o);   // one color source everywhere
-    return `<button role="tab" data-id="${o.id}" aria-selected="${state.selected === o.id}">
-       <span class="name-chip" style="background:${c}">${o.id === "team" ? "👥 Team" : o.name}</span>
-     </button>`;
+    const base = o.id === "team" ? o.color : seriesForPerson(o);  // one color source everywhere
+    const sel = state.selected === o.id;
+    // Whole button is the person's color; selected = a lighter tint of the same shade.
+    const bg = sel ? lighten(base, 0.62) : base;
+    const fg = sel ? darken(base, 0.5) : "#fff";
+    const label = o.id === "team" ? "👥 Team" : o.name;
+    return `<button role="tab" data-id="${o.id}" aria-selected="${sel}" class="seg-person${sel ? " sel" : ""}" style="background:${bg};color:${fg}">${label}</button>`;
   }).join("");
   seg.querySelectorAll("button").forEach((b) =>
     b.onclick = () => { state.selected = b.dataset.id; refreshAll(); });
@@ -342,16 +358,74 @@ function renderEntryPickers() {
 
 // ── Goals (localStorage per person) ────────────────────────────────────────────────
 function goalKey() { const p = personById(state.selected); return `returns_goal_${p ? p.name : "team"}`; }
+// Stats for a date window [startISO, endISO] over a set of entries.
+function dayOffsetISO(n) {
+  const x = new Date(todayISO() + "T00:00:00"); x.setDate(x.getDate() - n);
+  return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+}
+function periodStats(entries, startISO, endISO) {
+  const sub = entries.filter((e) => e.entry_date >= startISO && e.entry_date <= endISO);
+  const timed = sub.filter((e) => hoursFor(e) > 0);
+  const hours = timed.reduce((a,e) => a + hoursFor(e), 0);
+  const timedTotal = timed.reduce((a,e) => a + e.daily_total, 0);   // for speed = total÷hours
+  const total = sub.reduce((a,e) => a + e.daily_total, 0);          // all refunds in the window
+  return { total, hours, speed: hours ? timedTotal/hours : null, days: sub.length };
+}
+// A "more accurate" goal: the person's recent (last 30 days) speed, nudged up ~7%
+// as a realistic stretch and rounded to the nearest 5. Falls back to all-time.
 function suggestedGoal(entries) {
-  const timed = entries.filter((e) => hoursFor(e) > 0);
-  const th = timed.reduce((a,e) => a + hoursFor(e), 0);
-  const tt = timed.reduce((a,e) => a + e.daily_total, 0);
-  const avg = th ? tt/th : 30;
-  return Math.max(5, Math.ceil(avg / 5) * 5); // round up to nearest 5
+  const recent = periodStats(entries, dayOffsetISO(30), todayISO()).speed;
+  const allTime = periodStats(entries, "0000-01-01", todayISO()).speed;
+  const base = recent ?? allTime;
+  if (base == null) return 30;
+  return Math.max(5, Math.round(base * 1.07 / 5) * 5);
 }
 function getGoal(entries) {
   const stored = localStorage.getItem(goalKey());
   return stored ? +stored : suggestedGoal(entries);
+}
+
+// ── This week's improvement (both admin + staff) ─────────────────────────────────────
+function renderImprovement() {
+  const scope = scopeEntries();
+  const cur  = periodStats(scope, dayOffsetISO(6),  todayISO());     // last 7 days
+  const prev = periodStats(scope, dayOffsetISO(13), dayOffsetISO(7)); // the 7 days before
+  $("#improveWho").textContent = state.selected === "team" ? "Team" : (personById(state.selected)?.name || "");
+
+  const chip = (curV, prevV, unit, digits) => {
+    if (curV == null) return `<span class="delta flat">no timed days yet</span>`;
+    if (prevV == null) return `<span class="delta flat">first week — nothing to compare</span>`;
+    const d = curV - prevV;
+    const pct = prevV ? Math.round((d / prevV) * 100) : null;
+    const cls = d > 0 ? "up" : d < 0 ? "down" : "flat";
+    const arrow = d > 0 ? "▲" : d < 0 ? "▼" : "—";
+    const pctTxt = pct != null ? ` · ${d >= 0 ? "+" : ""}${pct}%` : "";
+    return `<span class="delta ${cls}">${arrow} ${Math.abs(d).toFixed(digits)}${unit}${pctTxt} <span class="muted">vs last week</span></span>`;
+  };
+
+  const goal = suggestedGoal(scope);
+  const speedNow = cur.speed;
+  const toGoal = (speedNow != null) ? goal - speedNow : null;
+
+  $("#improveGrid").innerHTML = `
+    <div class="improve-block">
+      <div class="k">Speed this week</div>
+      <div class="v">${speedNow == null ? "—" : speedNow.toFixed(1)}<small>/hr</small></div>
+      ${chip(cur.speed, prev.speed, "/hr", 1)}
+    </div>
+    <div class="improve-block">
+      <div class="k">Refunds this week</div>
+      <div class="v">${cur.total.toLocaleString()}</div>
+      ${chip(cur.total, prev.days ? prev.total : null, "", 0)}
+    </div>
+    <div class="improve-block">
+      <div class="k">Suggested goal</div>
+      <div class="v">${goal}<small>/hr</small></div>
+      <div class="improve-sub muted small">${
+        toGoal == null ? "based on the last 30 days"
+        : toGoal <= 0 ? `🎉 beating it by ${Math.abs(toGoal).toFixed(1)}/hr`
+        : `${toGoal.toFixed(1)}/hr to reach it`}</div>
+    </div>`;
 }
 
 // ── Stat tiles ────────────────────────────────────────────────────────────────────
@@ -526,7 +600,7 @@ function renderTable() {
 }
 
 // ── Refresh orchestration ─────────────────────────────────────────────────────────
-function refreshExceptTimer() { renderTiles(); renderCharts(); renderTable(); loadEntryForm(); }
+function refreshExceptTimer() { renderTiles(); renderImprovement(); renderCharts(); renderTable(); loadEntryForm(); }
 function refreshAll() { renderPersonSeg(); refreshExceptTimer(); loadTimer(); }
 
 // ── Theme ────────────────────────────────────────────────────────────────────────
