@@ -42,6 +42,11 @@
 }
 
 * { box-sizing: border-box; }
+/* The overlays (.auth-gate, .modal, .toast) set display:flex/block, which as an
+   author rule overrides the UA `[hidden]{display:none}` — so toggling the `hidden`
+   attribute in JS would NOT actually hide them (the login card stayed pinned on top
+   even after a successful sign-in). Force `hidden` to win everywhere. */
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
