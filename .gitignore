@@ -2,3 +2,13 @@
 *.png
 scratchpad/
 .DS_Store
+
+# …but DO track the app's own image assets (logo + PWA icons)
+!jfk-logo.png
+!icon-16.png
+!icon-32.png
+!icon-180.png
+!icon-192.png
+!icon-512.png
+!icon-maskable-512.png
+!apple-touch-icon.png

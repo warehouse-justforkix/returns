@@ -2,15 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Returns &amp; Refunds Tracker · JFK</title>
-  <link rel="stylesheet" href="style.css?v=11" />
+
+  <!-- Branding + installable-app (PWA) tags -->
+  <meta name="theme-color" content="#e5007d" />
+  <meta name="description" content="Just For Kix — Returns & Refunds productivity tracker" />
+  <link rel="icon" href="favicon.ico?v=12" sizes="any" />
+  <link rel="icon" type="image/png" href="icon-32.png?v=12" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=12" />
+  <link rel="manifest" href="manifest.webmanifest?v=12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="JFK Returns" />
+
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
   <!-- Login gate -->
   <div id="authGate" class="auth-gate" hidden>
     <div class="auth-card">
-      <div class="auth-brand"><span class="dot"></span><h1>Returns &amp; Refunds Tracker</h1></div>
+      <img class="auth-logo" src="jfk-logo.png?v=12" alt="Just For Kix" />
+      <div class="auth-brand"><h1>Returns &amp; Refunds Tracker</h1></div>
       <p class="muted small" id="authMode">Sign in to your JFK account.</p>
       <form id="authForm">
         <input type="email" id="authEmail" placeholder="you@justforkix.com" autocomplete="email" required />
@@ -44,7 +57,8 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="dot"></span>
+      <img class="brand-logo" src="jfk-logo.png?v=12" alt="Just For Kix" />
+      <span class="brand-sep"></span>
       <h1>Returns &amp; Refunds Tracker</h1>
     </div>
     <div class="who">
@@ -139,6 +153,15 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=11"></script>
+  <script type="module" src="app.js?v=12"></script>
+  <script>
+    // Register the service worker so the app is installable ("Add to Dock" /
+    // "Install app") and works offline. The SW is network-first (see sw.js), so
+    // it never serves a stale build while online.
+    if ("serviceWorker" in navigator) {
+      addEventListener("load", () =>
+        navigator.serviceWorker.register("sw.js?v=12").catch(() => {}));
+    }
+  </script>
 </body>
 </html>
