@@ -83,10 +83,12 @@ function hoursFor(e) { return (e.hours_spent || 0) + sessionHours(e.person_id, e
 function renderPersonSeg() {
   const seg = $("#personSeg");
   const opts = [{ id: "team", name: "Team", color: cssVar("--team") }, ...state.people];
-  seg.innerHTML = opts.map((o) =>
-    `<button role="tab" data-id="${o.id}" aria-selected="${state.selected === o.id}">
-       ${o.id === "team" ? "👥 Team" : `<span class="swatch" style="background:${o.color}"></span>${o.name}`}
-     </button>`).join("");
+  seg.innerHTML = opts.map((o) => {
+    const c = o.id === "team" ? o.color : seriesForPerson(o);   // one color source everywhere
+    return `<button role="tab" data-id="${o.id}" aria-selected="${state.selected === o.id}">
+       <span class="name-chip" style="background:${c}">${o.id === "team" ? "👥 Team" : o.name}</span>
+     </button>`;
+  }).join("");
   seg.querySelectorAll("button").forEach((b) =>
     b.onclick = () => { state.selected = b.dataset.id; refreshAll(); });
 }
@@ -161,26 +163,34 @@ function entryTarget() {
   return { personId: state.me?.id || null, date: todayISO() };  // staff = their own today, read-only
 }
 function fields() { return ["f_amazon","f_shopify","f_program","f_at","f_hours"]; }
-function loadEntryForm() {
+function fieldsEmpty() { return fields().every((id) => !$("#"+id).value); }
+function loadEntryForm(force = false) {
   const { personId, date } = entryTarget();
   const editable = state.isAdmin && !!personId;
   fields().forEach((id) => $("#"+id).disabled = !editable);
   $("#todayLabel").textContent = fmtDateLong(date);
   $("#entryHeading").firstChild.textContent = state.isAdmin ? "Log · " : "Today · ";
 
+  // Only (re)fill the boxes from stored data when the admin hasn't typed anything
+  // yet — switching the name/date toggle must NEVER wipe an in-progress entry
+  // (only Save clears them). Staff fields are read-only, so always refresh them.
+  const fill = force || !state.isAdmin || fieldsEmpty();
+
   if (!personId) {
-    fields().forEach((id) => $("#"+id).value = "");
+    if (fill) fields().forEach((id) => $("#"+id).value = "");
     $("#entryStatus").textContent = "";
     calcEntry(); return;
   }
   const e = state.entries.find((x) => x.person_id === personId && x.entry_date === date);
-  $("#f_amazon").value  = e?.amazon    || "";
-  $("#f_shopify").value = e?.shopify   || "";
-  $("#f_program").value = e?.program   || "";
-  $("#f_at").value      = e?.at_errors || "";
-  // admin edits the manual "base" hours; staff see the derived total (base + timer) read-only
   const sess = sessionHours(personId, date);
-  $("#f_hours").value = state.isAdmin ? (e?.hours_spent || "") : (((e?.hours_spent || 0) + sess) || "").toString();
+  if (fill) {
+    $("#f_amazon").value  = e?.amazon    || "";
+    $("#f_shopify").value = e?.shopify   || "";
+    $("#f_program").value = e?.program   || "";
+    $("#f_at").value      = e?.at_errors || "";
+    // admin edits the manual "base" hours; staff see the derived total (base + timer) read-only
+    $("#f_hours").value = state.isAdmin ? (e?.hours_spent || "") : (((e?.hours_spent || 0) + sess) || "").toString();
+  }
   $("#entryStatus").textContent = state.isAdmin
     ? (e ? "Editing existing" : "New entry")
     : (sess ? "Karley enters counts · your timer logs hours" : "Karley enters counts · run your timer to log hours");
@@ -207,7 +217,15 @@ async function saveEntry() {
   };
   const { error } = await sb.from("returns_entries").upsert(row, { onConflict: "person_id,entry_date" });
   if (error) { console.error(error); return toast("Save failed"); }
-  await loadAll(); refreshExceptTimer(); toast("Saved");
+  await loadAll(); refreshExceptTimer();
+  // Reset for the next entry: shift the date back to today (in case the admin was
+  // logging past data), then clear the boxes to a blank slate.
+  if (state.isAdmin) $("#entryDate").value = todayISO();
+  loadEntryForm();
+  fields().forEach((id) => $("#"+id).value = "");
+  $("#entryStatus").textContent = "Saved ✓ — ready for the next entry";
+  calcEntry();
+  toast("Saved");
 }
 
 // ── Auth: email invites (mirrors the Warehouse Hub) ─────────────────────────────────
@@ -382,7 +400,7 @@ function baseOpts() {
     responsive: true, maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { labels: { color: ink, boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { size: 12 } } },
+      legend: { labels: { color: ink, boxWidth: 16, boxHeight: 11, usePointStyle: false, font: { size: 12 } } },
       tooltip: { backgroundColor: cssVar("--ink"), titleColor: cssVar("--surface-1"),
                  bodyColor: cssVar("--surface-1"), padding: 10, cornerRadius: 8, boxPadding: 4 },
     },
@@ -468,7 +486,7 @@ function renderTable() {
     const avg = h > 0 ? (e.daily_total/h).toFixed(1) : "—";
     return `<tr>
       <td>${fmtDate(e.entry_date)}${e.note ? `<span class="note-badge" title="${e.note}">range</span>` : ""}</td>
-      <td><span class="swatch" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${seriesForPerson(p)};margin-right:6px"></span>${p?.name||"?"}</td>
+      <td><span class="name-chip" style="background:${seriesForPerson(p)}">${p?.name||"?"}</span></td>
       <td class="num">${e.amazon||""}</td><td class="num">${e.shopify||""}</td>
       <td class="num">${e.program||""}</td><td class="num">${e.at_errors||""}</td>
       <td class="num"><strong>${e.daily_total}</strong></td>
@@ -485,14 +503,21 @@ function renderTable() {
     await loadAll(); refreshExceptTimer(); toast("Deleted");
   });
 
-  // View more / show less call-out
+  // Heading reflects what's shown
+  const heading = $("#entriesHeading");
+  if (heading) heading.textContent = state.entriesExpanded
+    ? "Recent Entries — All"
+    : "Recent Entries — Last 7 Days";
+
+  // View more / show less call-out (with a rotating dropdown chevron)
   const moreBtn = $("#entriesMore");
   if (moreBtn) {
     if (moreCount > 0) {
       moreBtn.hidden = false;
-      moreBtn.textContent = state.entriesExpanded
+      const label = state.entriesExpanded
         ? "Show less"
         : `View more — ${moreCount} earlier ${moreCount === 1 ? "entry" : "entries"}`;
+      moreBtn.innerHTML = `${label} <span class="chev${state.entriesExpanded ? " up" : ""}">⌄</span>`;
     } else {
       moreBtn.hidden = true;
       state.entriesExpanded = false;

@@ -6,17 +6,17 @@
   <title>Returns &amp; Refunds Tracker · JFK</title>
 
   <!-- Branding + installable-app (PWA) tags -->
-  <meta name="theme-color" content="#e5007d" />
+  <meta name="theme-color" content="#0f8a54" />
   <meta name="description" content="Just For Kix — Returns & Refunds productivity tracker" />
-  <link rel="icon" href="favicon.ico?v=14" sizes="any" />
-  <link rel="icon" type="image/png" href="icon-32.png?v=14" sizes="32x32" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=14" />
-  <link rel="manifest" href="manifest.webmanifest?v=14" />
+  <link rel="icon" href="favicon.ico?v=15" sizes="any" />
+  <link rel="icon" type="image/png" href="icon-32.png?v=15" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=15" />
+  <link rel="manifest" href="manifest.webmanifest?v=15" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="JFK Returns" />
 
-  <link rel="stylesheet" href="style.css?v=13" />
+  <link rel="stylesheet" href="style.css?v=15" />
 </head>
 <body>
   <!-- Login gate -->
@@ -137,7 +137,7 @@
 
     <!-- Recent entries table -->
     <section class="card">
-      <div class="card-h"><h2>Recent entries</h2></div>
+      <div class="card-h"><h2 id="entriesHeading">Recent Entries — Last 7 Days</h2></div>
       <div class="table-wrap">
         <table id="entriesTable">
           <thead>
@@ -154,14 +154,14 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=13"></script>
+  <script type="module" src="app.js?v=15"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=14").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=15").catch(() => {}));
     }
   </script>
 </body>

@@ -9,14 +9,14 @@
   --grid:      #e1e0d9;
   --axis:      #c3c2b7;
   --border:    rgba(11,11,11,0.10);
-  --series-1:  #2a78d6;      /* Karley — blue  */
-  --series-2:  #008300;      /* Riley  — green */
+  --series-1:  #2a78d6;      /* Karley — blue   */
+  --series-2:  #ed7d0c;      /* Riley  — orange */
   --team:      #4a3aa7;      /* violet, for combined line */
   --good:      #0ca30c;
-  --brand:      #e5007d;     /* Just For Kix magenta — app chrome accent */
+  --brand:      #e5007d;     /* Just For Kix magenta — buttons / CTAs */
   --brand-deep: #a30055;
   --brand-tint: #ffe3f2;     /* soft magenta wash for subtle fills */
-  --header-grad: linear-gradient(120deg, #e5007d 0%, #b3005f 55%, #7a003f 100%);
+  --header:     #0f8a54;     /* solid green header, matches the app icon */
   --shadow:    0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.06);
   --radius:    14px;
 }
@@ -31,12 +31,13 @@
   --axis:      #383835;
   --border:    rgba(255,255,255,0.10);
   --series-1:  #3987e5;
-  --series-2:  #008300;
+  --series-2:  #ff9a33;      /* Riley — orange (brighter on dark) */
   --team:      #9085e9;
   --good:      #0ca30c;
   --brand:      #ff3ba0;     /* brighter magenta for dark surfaces */
   --brand-deep: #c40068;
   --brand-tint: #3a0a24;
+  --header:     #0e7d4c;
   --shadow:    0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.4);
 }
 @media (prefers-color-scheme: dark) {
@@ -44,8 +45,8 @@
     color-scheme: dark;
     --surface-1: #1a1a19; --plane: #0d0d0d; --ink: #fff; --ink-2: #c3c2b7;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
-    --series-1: #3987e5; --team: #9085e9;
-    --brand: #ff3ba0; --brand-deep: #c40068; --brand-tint: #3a0a24;
+    --series-1: #3987e5; --series-2: #ff9a33; --team: #9085e9;
+    --brand: #ff3ba0; --brand-deep: #c40068; --brand-tint: #3a0a24; --header: #0e7d4c;
   }
 }
 
@@ -68,8 +69,8 @@ body {
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; padding: 15px 22px; flex-wrap: wrap;
-  background: var(--header-grad); border-bottom: 0;
-  box-shadow: 0 2px 14px rgba(122,0,63,.28);
+  background: var(--header); border-bottom: 0;
+  box-shadow: 0 2px 12px rgba(15,138,84,.30);
   position: sticky; top: 0; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -147,7 +148,7 @@ main { max-width: 1080px; margin: 0 auto; padding: 20px; display: grid; gap: 18p
 
 button.primary {
   border: 0; border-radius: 10px;
-  background: linear-gradient(135deg, var(--brand), var(--brand-deep)); color: #fff;
+  background: var(--brand); color: #fff;
   font: inherit; font-weight: 600; padding: 11px 22px; cursor: pointer;
 }
 button.primary:hover { filter: brightness(1.05); }
@@ -196,6 +197,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--plane); }
 .row-del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
 .row-del:hover { color: #d03b3b; }
+/* Colored name chip — the person's assigned color as a rounded rectangle with
+   their name (replaces the little color dots, used everywhere). */
+.name-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 7px;
+  color: #fff; font-weight: 600; font-size: 12px; line-height: 1.25;
+  white-space: nowrap; letter-spacing: .01em;
+  text-shadow: 0 1px 1px rgba(0,0,0,.22);
+}
 .more-wrap { display: flex; justify-content: center; margin-top: 14px; }
 .more-btn {
   border: 1px solid var(--border); background: var(--plane); color: var(--brand-deep);
@@ -203,6 +213,9 @@ tbody tr:hover { background: var(--plane); }
   border-radius: 999px; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
 }
 .more-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
+.more-btn .chev { display: inline-block; margin-left: 4px; font-weight: 700;
+  transition: transform .18s ease; transform: translateY(-1px); }
+.more-btn .chev.up { transform: rotate(180deg) translateY(-1px); }
 .note-badge { font-size: 10px; color: var(--muted); border: 1px solid var(--border);
   border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
 
@@ -217,8 +230,7 @@ tbody tr:hover { background: var(--plane); }
 }
 .auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .auth-brand h1 { font-size: 18px; margin: 0; font-weight: 650; }
-.auth-brand .dot { width: 12px; height: 12px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), var(--brand-deep)); }
+.auth-brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--brand); }
 .auth-logo { height: 42px; width: auto; display: block; margin: 2px auto 12px; }
 #authForm { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 10px; }
 #authForm input {
