@@ -13,10 +13,10 @@
   --series-2:  #ed7d0c;      /* Riley  — orange */
   --team:      #4a3aa7;      /* violet, for combined line */
   --good:      #0ca30c;
-  --brand:      #e5007d;     /* Just For Kix magenta — buttons / CTAs */
-  --brand-deep: #a30055;
-  --brand-tint: #ffe3f2;     /* soft magenta wash for subtle fills */
-  --header:     #e5007d;     /* solid Just For Kix pink header */
+  --brand:      #b3005f;     /* Just For Kix magenta (darker) — buttons / CTAs */
+  --brand-deep: #820045;
+  --brand-tint: #fbdcec;     /* soft magenta wash for subtle fills */
+  --header:     #a3005a;     /* solid deep pink header */
   --shadow:    0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.06);
   --radius:    14px;
 }
@@ -34,10 +34,10 @@
   --series-2:  #ff9a33;      /* Riley — orange (brighter on dark) */
   --team:      #9085e9;
   --good:      #0ca30c;
-  --brand:      #ff3ba0;     /* brighter magenta for dark surfaces */
-  --brand-deep: #c40068;
+  --brand:      #e5007d;     /* darker magenta on dark surfaces */
+  --brand-deep: #a30055;
   --brand-tint: #3a0a24;
-  --header:     #e5007d;
+  --header:     #b3005f;
   --shadow:    0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.4);
 }
 @media (prefers-color-scheme: dark) {
@@ -46,7 +46,7 @@
     --surface-1: #1a1a19; --plane: #0d0d0d; --ink: #fff; --ink-2: #c3c2b7;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
     --series-1: #3987e5; --series-2: #ff9a33; --team: #9085e9;
-    --brand: #ff3ba0; --brand-deep: #c40068; --brand-tint: #3a0a24; --header: #e5007d;
+    --brand: #e5007d; --brand-deep: #a30055; --brand-tint: #3a0a24; --header: #b3005f;
   }
 }
 
