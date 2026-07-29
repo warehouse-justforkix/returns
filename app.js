@@ -127,10 +127,13 @@ async function loadTimer() {
   stopTick();
   state.timer.session = null;
   const me = state.me;
-  // The timer is always YOUR OWN — you can't run someone else's. So it only shows
-  // when you're viewing yourself (or the Team); it hides on another member's tab.
+  // The timer is always YOUR OWN — it only shows on your own tab (hidden on Team
+  // and on other members' tabs). When it's hidden, let the entry card fill the row.
+  const mine = !!(me && state.selected === me.id);
   const card = $("#timerCard");
-  if (card) card.hidden = !(state.selected === "team" || (me && state.selected === me.id));
+  if (card) card.hidden = !mine;
+  const topRow = $("#topRow");
+  if (topRow) topRow.classList.toggle("timer-hidden", !mine);
   $("#timerBtn").disabled = !me;
   $("#timerFor").textContent = me ? `${me.name} — your timer` : "";
   if (!me) { renderTimerIdle(); return; }

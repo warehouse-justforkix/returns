@@ -185,6 +185,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* Staff has no data-entry card, so let the timer fill its row */
 body:not(.admin) #topRow { grid-template-columns: 1fr; }
+/* When the timer is hidden, the remaining card (entry) spans the full width */
+#topRow.timer-hidden { grid-template-columns: 1fr; }
 
 /* This week's improvement */
 .improve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
