@@ -565,7 +565,10 @@ function renderTable() {
       <td class="num">${e.program||""}</td><td class="num">${e.at_errors||""}</td>
       <td class="num"><strong>${e.daily_total}</strong></td>
       <td class="num">${h ? h.toFixed(2) : "—"}</td><td class="num">${avg}</td>
-      <td><button class="row-del admin-only" data-id="${e.id}" title="Delete">✕</button></td>
+      <td class="row-actions">
+        <button class="row-edit admin-only" data-id="${e.id}" title="Edit this entry">✎</button>
+        <button class="row-del admin-only" data-id="${e.id}" title="Delete">✕</button>
+      </td>
     </tr>`;
   }).join("") || `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">${emptyMsg}</td></tr>`;
   // Only the admin can remove existing entries (the ✕ is admin-only in the DOM and
@@ -576,6 +579,17 @@ function renderTable() {
     await sb.from("returns_entries").delete().eq("id", b.dataset.id);
     await loadAll(); refreshExceptTimer(); toast("Deleted");
   });
+  // Pencil → load that row into the entry form for editing (admin only)
+  tb.querySelectorAll(".row-edit").forEach((b) => b.onclick = () => {
+    if (!state.isAdmin) return;
+    const e = state.entries.find((x) => x.id === b.dataset.id);
+    if (!e) return;
+    $("#entryPerson").value = e.person_id;
+    $("#entryDate").value = e.entry_date;
+    loadEntryForm(true);                       // force-fill the boxes from this entry
+    document.querySelector(".entry-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Editing " + fmtDateLong(e.entry_date));
+  });
 
   // Heading reflects what's shown
   const heading = $("#entriesHeading");
@@ -583,7 +597,7 @@ function renderTable() {
     ? "Recent Entries — All"
     : "Recent Entries — Last 7 Days";
 
-  // View more / show less call-out (with a rotating dropdown chevron)
+  // View more / show less call-out
   const moreBtn = $("#entriesMore");
   if (moreBtn) {
     if (moreCount > 0) {

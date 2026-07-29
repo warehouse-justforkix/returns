@@ -16,7 +16,7 @@
   --brand:      #e5007d;     /* Just For Kix magenta — buttons / CTAs */
   --brand-deep: #a30055;
   --brand-tint: #ffe3f2;     /* soft magenta wash for subtle fills */
-  --header:     #0f8a54;     /* solid green header, matches the app icon */
+  --header:     #e5007d;     /* solid Just For Kix pink header */
   --shadow:    0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.06);
   --radius:    14px;
 }
@@ -37,7 +37,7 @@
   --brand:      #ff3ba0;     /* brighter magenta for dark surfaces */
   --brand-deep: #c40068;
   --brand-tint: #3a0a24;
-  --header:     #0e7d4c;
+  --header:     #e5007d;
   --shadow:    0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.4);
 }
 @media (prefers-color-scheme: dark) {
@@ -46,7 +46,7 @@
     --surface-1: #1a1a19; --plane: #0d0d0d; --ink: #fff; --ink-2: #c3c2b7;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
     --series-1: #3987e5; --series-2: #ff9a33; --team: #9085e9;
-    --brand: #ff3ba0; --brand-deep: #c40068; --brand-tint: #3a0a24; --header: #0e7d4c;
+    --brand: #ff3ba0; --brand-deep: #c40068; --brand-tint: #3a0a24; --header: #e5007d;
   }
 }
 
@@ -70,7 +70,7 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; padding: 15px 22px; flex-wrap: wrap;
   background: var(--header); border-bottom: 0;
-  box-shadow: 0 2px 12px rgba(15,138,84,.30);
+  box-shadow: 0 2px 12px rgba(122,0,63,.28);
   position: sticky; top: 0; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -220,8 +220,10 @@ th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--bor
 th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--plane); }
-.row-del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
+.row-actions { white-space: nowrap; text-align: right; }
+.row-del, .row-edit { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; }
 .row-del:hover { color: #d03b3b; }
+.row-edit:hover { color: var(--brand); }
 /* Colored name chip — the person's assigned color as a rounded rectangle with
    their name (replaces the little color dots, used everywhere). */
 .name-chip {
@@ -238,9 +240,6 @@ tbody tr:hover { background: var(--plane); }
   border-radius: 999px; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
 }
 .more-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
-.more-btn .chev { display: inline-block; margin-left: 4px; font-weight: 700;
-  transition: transform .18s ease; transform: translateY(-1px); }
-.more-btn .chev.up { transform: rotate(180deg) translateY(-1px); }
 .note-badge { font-size: 10px; color: var(--muted); border: 1px solid var(--border);
   border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
 
