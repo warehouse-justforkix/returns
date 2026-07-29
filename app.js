@@ -28,6 +28,7 @@ const state = {
   me: null,              // the logged-in person's returns_people row
   isAdmin: false,        // from me.is_admin (set by the invite, server-side)
   entriesExpanded: false,// Recent entries: false = last 7 days only, true = full range
+  editingId: null,       // Recent entries: id of the row being edited inline (admin)
 };
 const charts = {};
 
@@ -126,6 +127,10 @@ async function loadTimer() {
   stopTick();
   state.timer.session = null;
   const me = state.me;
+  // The timer is always YOUR OWN — you can't run someone else's. So it only shows
+  // when you're viewing yourself (or the Team); it hides on another member's tab.
+  const card = $("#timerCard");
+  if (card) card.hidden = !(state.selected === "team" || (me && state.selected === me.id));
   $("#timerBtn").disabled = !me;
   $("#timerFor").textContent = me ? `${me.name} — your timer` : "";
   if (!me) { renderTimerIdle(); return; }
@@ -554,15 +559,31 @@ function renderTable() {
   const tb = $("#entriesTable tbody");
   const emptyMsg = state.entriesExpanded ? "No entries in this range."
                                          : "No entries in the last 7 days.";
+  const numCell = (v) => `<td class="num">${v || ""}</td>`;
+  const inpCell = (f, v, step) => `<td class="num"><input class="row-inp" data-f="${f}" type="number" min="0"${step ? ` step="${step}"` : ""} value="${v || ""}"></td>`;
   tb.innerHTML = rows.map((e) => {
     const p = personById(e.person_id);
     const h = hoursFor(e);
     const avg = h > 0 ? (e.daily_total/h).toFixed(1) : "—";
+    const who = `<td><span class="name-chip" style="background:${seriesForPerson(p)}">${p?.name||"?"}</span></td>`;
+    const date = `<td>${fmtDate(e.entry_date)}${e.note ? `<span class="note-badge" title="${e.note}">range</span>` : ""}</td>`;
+    if (state.editingId === e.id) {
+      // Inline edit: the counts + hours become inputs, Save/Cancel on the right.
+      return `<tr class="editing">
+        ${date}${who}
+        ${inpCell("amazon", e.amazon)}${inpCell("shopify", e.shopify)}
+        ${inpCell("program", e.program)}${inpCell("at_errors", e.at_errors)}
+        <td class="num"><strong>${e.daily_total}</strong></td>
+        ${inpCell("hours_spent", e.hours_spent, "0.01")}<td class="num">${avg}</td>
+        <td class="row-actions">
+          <button class="row-save" data-id="${e.id}" title="Save changes">Save</button>
+          <button class="row-cancel" title="Cancel">✕</button>
+        </td>
+      </tr>`;
+    }
     return `<tr>
-      <td>${fmtDate(e.entry_date)}${e.note ? `<span class="note-badge" title="${e.note}">range</span>` : ""}</td>
-      <td><span class="name-chip" style="background:${seriesForPerson(p)}">${p?.name||"?"}</span></td>
-      <td class="num">${e.amazon||""}</td><td class="num">${e.shopify||""}</td>
-      <td class="num">${e.program||""}</td><td class="num">${e.at_errors||""}</td>
+      ${date}${who}
+      ${numCell(e.amazon)}${numCell(e.shopify)}${numCell(e.program)}${numCell(e.at_errors)}
       <td class="num"><strong>${e.daily_total}</strong></td>
       <td class="num">${h ? h.toFixed(2) : "—"}</td><td class="num">${avg}</td>
       <td class="row-actions">
@@ -579,16 +600,29 @@ function renderTable() {
     await sb.from("returns_entries").delete().eq("id", b.dataset.id);
     await loadAll(); refreshExceptTimer(); toast("Deleted");
   });
-  // Pencil → load that row into the entry form for editing (admin only)
+  // Pencil → open THIS row's fields inline for editing (admin only)
   tb.querySelectorAll(".row-edit").forEach((b) => b.onclick = () => {
+    if (!state.isAdmin) return;
+    state.editingId = b.dataset.id;
+    renderTable();
+    document.querySelector("#entriesTable tr.editing .row-inp")?.focus();
+  });
+  tb.querySelectorAll(".row-cancel").forEach((b) => b.onclick = () => { state.editingId = null; renderTable(); });
+  tb.querySelectorAll(".row-save").forEach((b) => b.onclick = async () => {
     if (!state.isAdmin) return;
     const e = state.entries.find((x) => x.id === b.dataset.id);
     if (!e) return;
-    $("#entryPerson").value = e.person_id;
-    $("#entryDate").value = e.entry_date;
-    loadEntryForm(true);                       // force-fill the boxes from this entry
-    document.querySelector(".entry-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    toast("Editing " + fmtDateLong(e.entry_date));
+    const tr = b.closest("tr");
+    const val = (f) => { const el = tr.querySelector(`.row-inp[data-f="${f}"]`); return el ? (+el.value || 0) : 0; };
+    const row = {
+      person_id: e.person_id, entry_date: e.entry_date,
+      amazon: val("amazon"), shopify: val("shopify"), program: val("program"),
+      at_errors: val("at_errors"), hours_spent: val("hours_spent"),
+    };
+    const { error } = await sb.from("returns_entries").upsert(row, { onConflict: "person_id,entry_date" });
+    if (error) { console.error(error); return toast("Save failed"); }
+    state.editingId = null;
+    await loadAll(); refreshExceptTimer(); toast("Saved");
   });
 
   // Heading reflects what's shown

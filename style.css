@@ -221,9 +221,21 @@ th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: v
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--plane); }
 .row-actions { white-space: nowrap; text-align: right; }
-.row-del, .row-edit { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; }
-.row-del:hover { color: #d03b3b; }
+.row-del, .row-edit, .row-cancel { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+.row-del:hover, .row-cancel:hover { color: #d03b3b; }
 .row-edit:hover { color: var(--brand); }
+/* Inline row editing */
+tr.editing { background: var(--brand-tint); }
+.row-inp {
+  width: 56px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px;
+  font: inherit; font-size: 13px; text-align: right; background: var(--surface-1); color: var(--ink);
+}
+.row-inp:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.row-save {
+  border: 0; background: var(--brand); color: #fff; font: inherit; font-size: 12px;
+  font-weight: 700; padding: 5px 12px; border-radius: 7px; cursor: pointer; margin-right: 4px;
+}
+.row-save:hover { filter: brightness(1.05); }
 /* Colored name chip — the person's assigned color as a rounded rectangle with
    their name (replaces the little color dots, used everywhere). */
 .name-chip {

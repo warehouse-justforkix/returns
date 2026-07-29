@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="JFK Returns" />
 
-  <link rel="stylesheet" href="style.css?v=19" />
+  <link rel="stylesheet" href="style.css?v=20" />
 </head>
 <body>
   <!-- Login gate -->
@@ -73,7 +73,7 @@
   <main id="app">
     <!-- Timer + Today entry -->
     <section class="grid-two" id="topRow">
-      <div class="card timer-card">
+      <div class="card timer-card" id="timerCard">
         <div class="card-h">
           <h2>Timer</h2>
           <span class="muted" id="timerFor"></span>
@@ -163,14 +163,14 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=18"></script>
+  <script type="module" src="app.js?v=20"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=19").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=20").catch(() => {}));
     }
   </script>
 </body>
