@@ -5,6 +5,7 @@ scratchpad/
 
 # …but DO track the app's own image assets (logo + PWA icons)
 !jfk-logo.png
+!jfk-logo-white.png
 !icon-16.png
 !icon-32.png
 !icon-180.png

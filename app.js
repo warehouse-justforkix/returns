@@ -27,6 +27,7 @@ const state = {
   timer: { session: null, tick: null }, // the logged-in person's running session
   me: null,              // the logged-in person's returns_people row
   isAdmin: false,        // from me.is_admin (set by the invite, server-side)
+  entriesExpanded: false,// Recent entries: false = last 7 days only, true = full range
 };
 const charts = {};
 
@@ -448,10 +449,19 @@ function renderCharts() {
 
 // ── Recent entries table ────────────────────────────────────────────────────────────
 function renderTable() {
-  const rows = scopeEntries().filter((e)=>inRange(e.entry_date))
-    .sort((a,b)=> b.entry_date.localeCompare(a.entry_date) || a.person_id.localeCompare(b.person_id))
-    .slice(0, 40);
+  const all = scopeEntries().filter((e)=>inRange(e.entry_date))
+    .sort((a,b)=> b.entry_date.localeCompare(a.entry_date) || a.person_id.localeCompare(b.person_id));
+  // Default (collapsed) view = the last 7 days. "View more" expands to the whole
+  // selected range; the button collapses it again.
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+  const cutoffISO = `${cutoff.getFullYear()}-${pad(cutoff.getMonth()+1)}-${pad(cutoff.getDate())}`;
+  const recent = all.filter((e) => e.entry_date >= cutoffISO);
+  const moreCount = all.length - recent.length;
+  const rows = state.entriesExpanded ? all.slice(0, 100) : recent;
+
   const tb = $("#entriesTable tbody");
+  const emptyMsg = state.entriesExpanded ? "No entries in this range."
+                                         : "No entries in the last 7 days.";
   tb.innerHTML = rows.map((e) => {
     const p = personById(e.person_id);
     const h = hoursFor(e);
@@ -465,13 +475,29 @@ function renderTable() {
       <td class="num">${h ? h.toFixed(2) : "—"}</td><td class="num">${avg}</td>
       <td><button class="row-del admin-only" data-id="${e.id}" title="Delete">✕</button></td>
     </tr>`;
-  }).join("") || `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No entries in this range.</td></tr>`;
+  }).join("") || `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">${emptyMsg}</td></tr>`;
+  // Only the admin can remove existing entries (the ✕ is admin-only in the DOM and
+  // RLS blocks the delete server-side regardless).
   tb.querySelectorAll(".row-del").forEach((b) => b.onclick = async () => {
     if (!state.isAdmin) return;
     if (!confirm("Delete this entry?")) return;
     await sb.from("returns_entries").delete().eq("id", b.dataset.id);
     await loadAll(); refreshExceptTimer(); toast("Deleted");
   });
+
+  // View more / show less call-out
+  const moreBtn = $("#entriesMore");
+  if (moreBtn) {
+    if (moreCount > 0) {
+      moreBtn.hidden = false;
+      moreBtn.textContent = state.entriesExpanded
+        ? "Show less"
+        : `View more — ${moreCount} earlier ${moreCount === 1 ? "entry" : "entries"}`;
+    } else {
+      moreBtn.hidden = true;
+      state.entriesExpanded = false;
+    }
+  }
 }
 
 // ── Refresh orchestration ─────────────────────────────────────────────────────────
@@ -503,6 +529,7 @@ function wire() {
     localStorage.setItem(goalKey(), String(+$("#goalInput").value || 0));
     renderTiles(); renderCharts();
   });
+  $("#entriesMore").onclick = () => { state.entriesExpanded = !state.entriesExpanded; renderTable(); };
   // ── auth ──
   let mode = "in";
   $("#authForm").addEventListener("submit", (e) => {

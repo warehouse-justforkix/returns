@@ -16,6 +16,7 @@
   --brand:      #e5007d;     /* Just For Kix magenta — app chrome accent */
   --brand-deep: #a30055;
   --brand-tint: #ffe3f2;     /* soft magenta wash for subtle fills */
+  --header-grad: linear-gradient(120deg, #e5007d 0%, #b3005f 55%, #7a003f 100%);
   --shadow:    0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.06);
   --radius:    14px;
 }
@@ -66,17 +67,24 @@ body {
 /* ── Top bar ───────────────────────────────────────────────────────────────── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 14px 20px; flex-wrap: wrap;
-  background: var(--surface-1); border-bottom: 1px solid var(--border);
+  gap: 16px; padding: 15px 22px; flex-wrap: wrap;
+  background: var(--header-grad); border-bottom: 0;
+  box-shadow: 0 2px 14px rgba(122,0,63,.28);
   position: sticky; top: 0; z-index: 20;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
-.brand .dot { width: 12px; height: 12px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), var(--brand-deep)); }
-.brand-logo { height: 30px; width: auto; display: block; }
-.brand-sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; color: #fff; }
+.brand-logo { height: 34px; width: auto; display: block;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.18)); }
+.brand-sep { width: 1px; height: 24px; background: rgba(255,255,255,.5); margin: 0 3px; }
 .who { display: flex; align-items: center; gap: 10px; }
+/* On the magenta band, the controls become translucent-white chips */
+.topbar .seg, .topbar .range { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.28); }
+.topbar .seg button, .topbar .range button { color: rgba(255,255,255,.9); }
+.topbar .seg button[aria-selected="true"] { background: #fff; color: var(--brand-deep); box-shadow: none; }
+.topbar .ghost-btn { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.3); color: #fff; }
+.topbar .ghost-btn:hover { background: rgba(255,255,255,.26); }
+.topbar .user-chip { color: #fff; }
 
 /* Segmented control (person + range) */
 .seg, .range {
@@ -144,8 +152,7 @@ button.primary {
 }
 button.primary:hover { filter: brightness(1.05); }
 button.primary.big { font-size: 17px; padding: 14px 46px; min-width: 200px; }
-button.primary.stop { background: var(--good); }
-button.primary.stop { background: #d03b3b; }
+button.primary.stop { background: #d03b3b; color: #fff; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Entry form ────────────────────────────────────────────────────────────── */
@@ -189,6 +196,13 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--plane); }
 .row-del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; }
 .row-del:hover { color: #d03b3b; }
+.more-wrap { display: flex; justify-content: center; margin-top: 14px; }
+.more-btn {
+  border: 1px solid var(--border); background: var(--plane); color: var(--brand-deep);
+  font: inherit; font-size: 13px; font-weight: 600; padding: 8px 20px;
+  border-radius: 999px; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+}
+.more-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-tint); }
 .note-badge { font-size: 10px; color: var(--muted); border: 1px solid var(--border);
   border-radius: 5px; padding: 1px 5px; margin-left: 6px; }
 

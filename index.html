@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="JFK Returns" />
 
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
   <!-- Login gate -->
@@ -57,7 +57,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <img class="brand-logo" src="jfk-logo.png?v=12" alt="Just For Kix" />
+      <img class="brand-logo" src="jfk-logo-white.png?v=13" alt="Just For Kix" />
       <span class="brand-sep"></span>
       <h1>Returns &amp; Refunds Tracker</h1>
     </div>
@@ -148,19 +148,20 @@
           <tbody></tbody>
         </table>
       </div>
+      <div class="more-wrap"><button class="more-btn" id="entriesMore" hidden></button></div>
     </section>
   </main>
 
   <div id="toast" class="toast" hidden></div>
 
-  <script type="module" src="app.js?v=12"></script>
+  <script type="module" src="app.js?v=13"></script>
   <script>
     // Register the service worker so the app is installable ("Add to Dock" /
     // "Install app") and works offline. The SW is network-first (see sw.js), so
     // it never serves a stale build while online.
     if ("serviceWorker" in navigator) {
       addEventListener("load", () =>
-        navigator.serviceWorker.register("sw.js?v=12").catch(() => {}));
+        navigator.serviceWorker.register("sw.js?v=13").catch(() => {}));
     }
   </script>
 </body>
