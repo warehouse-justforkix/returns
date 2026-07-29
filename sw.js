@@ -8,7 +8,7 @@
 // when the network is unavailable. Cross-origin requests (Supabase API,
 // esm.sh, jsDelivr) are left entirely to the browser — never intercepted.
 
-const CACHE = "jfk-returns-v13";
+const CACHE = "jfk-returns-v14";
 const SHELL = [
   "./",
   "./index.html",
@@ -17,10 +17,10 @@ const SHELL = [
   "./config.js",
   "./jfk-logo.png?v=12",
   "./jfk-logo-white.png?v=13",
-  "./icon-192.png?v=12",
-  "./icon-512.png?v=12",
-  "./apple-touch-icon.png?v=12",
-  "./manifest.webmanifest?v=12",
+  "./icon-192.png?v=14",
+  "./icon-512.png?v=14",
+  "./apple-touch-icon.png?v=14",
+  "./manifest.webmanifest?v=14",
 ];
 
 self.addEventListener("install", (e) => {
